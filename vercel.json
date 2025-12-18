@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/collect-kol-data",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/collect-all-tweets",
+      "schedule": "30 2 * * *"
+    }
+  ]
+}

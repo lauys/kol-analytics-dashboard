@@ -1,0 +1,212 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.13 0.03 260);
+  --foreground: oklch(0.96 0.01 250);
+  --card: oklch(0.16 0.04 260);
+  --card-foreground: oklch(0.96 0.01 250);
+  --popover: oklch(0.14 0.035 260);
+  --popover-foreground: oklch(0.96 0.01 250);
+  --primary: oklch(0.72 0.17 265);
+  --primary-foreground: oklch(0.09 0.02 250);
+  --secondary: oklch(0.2 0.04 255);
+  --secondary-foreground: oklch(0.96 0.01 250);
+  --muted: oklch(0.22 0.03 255);
+  --muted-foreground: oklch(0.66 0.03 255);
+  --accent: oklch(0.7 0.16 210);
+  --accent-foreground: oklch(0.08 0.02 245);
+  --destructive: oklch(0.56 0.22 15);
+  --destructive-foreground: oklch(0.99 0.002 240);
+  --border: oklch(0.23 0.04 260);
+  --input: oklch(0.23 0.04 260);
+  --ring: oklch(0.72 0.17 265);
+  --chart-1: oklch(0.72 0.17 265);
+  --chart-2: oklch(0.7 0.14 215);
+  --chart-3: oklch(0.68 0.16 160);
+  --chart-4: oklch(0.66 0.18 300);
+  --chart-5: oklch(0.72 0.19 80);
+  --radius: 0.9rem;
+  --success: oklch(0.72 0.14 150);
+  --warning: oklch(0.78 0.17 75);
+  --sidebar: oklch(0.12 0.03 260);
+  --sidebar-foreground: oklch(0.96 0.01 250);
+  --sidebar-primary: oklch(0.72 0.17 265);
+  --sidebar-primary-foreground: oklch(0.09 0.02 250);
+  --sidebar-accent: oklch(0.2 0.04 255);
+  --sidebar-accent-foreground: oklch(0.96 0.01 250);
+  --sidebar-border: oklch(0.23 0.04 260);
+  --sidebar-ring: oklch(0.72 0.17 265);
+}
+
+.dark {
+  /* 加深整体背景，让卡片更“浮”出来 */
+  --background: oklch(0.055 0.04 260);
+  --foreground: oklch(0.96 0.02 250);
+  /* 提亮卡片底色，增强与背景的对比度 */
+  --card: oklch(0.16 0.05 260);
+  --card-foreground: oklch(0.96 0.02 250);
+  --popover: oklch(0.09 0.045 260);
+  --popover-foreground: oklch(0.96 0.02 250);
+  --primary: oklch(0.78 0.2 265);
+  --primary-foreground: oklch(0.07 0.04 260);
+  --secondary: oklch(0.16 0.05 255);
+  --secondary-foreground: oklch(0.96 0.02 250);
+  --muted: oklch(0.18 0.04 255);
+  --muted-foreground: oklch(0.7 0.04 255);
+  --accent: oklch(0.76 0.2 210);
+  --accent-foreground: oklch(0.07 0.04 260);
+  --destructive: oklch(0.5 0.2 15);
+  --destructive-foreground: oklch(0.96 0.02 250);
+  /* 提亮边框颜色，卡片和模块边缘更清晰 */
+  --border: oklch(0.3 0.05 260);
+  --input: oklch(0.23 0.05 260);
+  --ring: oklch(0.78 0.2 265);
+  --chart-1: oklch(0.78 0.2 265);
+  --chart-2: oklch(0.76 0.17 210);
+  --chart-3: oklch(0.74 0.18 160);
+  --chart-4: oklch(0.72 0.2 300);
+  --chart-5: oklch(0.78 0.21 80);
+  --success: oklch(0.76 0.18 150);
+  --warning: oklch(0.8 0.2 75);
+  --sidebar: oklch(0.08 0.04 260);
+  --sidebar-foreground: oklch(0.96 0.02 250);
+  --sidebar-primary: oklch(0.78 0.2 265);
+  --sidebar-primary-foreground: oklch(0.07 0.04 260);
+  --sidebar-accent: oklch(0.18 0.04 255);
+  --sidebar-accent-foreground: oklch(0.96 0.02 250);
+  --sidebar-border: oklch(0.19 0.05 260);
+  --sidebar-ring: oklch(0.78 0.2 265);
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+.gradient-border {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--primary), var(--chart-2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+/* Web3 / 科技感应用背景：网格 + 光晕 */
+.bg-app {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, color-mix(in oklch, var(--chart-2) 40%, transparent), transparent 60%),
+    radial-gradient(circle at top right, color-mix(in oklch, var(--chart-4) 40%, transparent), transparent 60%),
+    radial-gradient(circle at bottom, color-mix(in oklch, var(--chart-5) 38%, transparent), transparent 65%),
+    oklch(0.08 0.04 260);
+}
+
+.bg-app::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background-image: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--border) 35%, transparent 65%) 1px,
+      transparent 0
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--border) 28%, transparent 72%) 1px,
+      transparent 0
+    );
+  background-size: 40px 40px;
+  opacity: 0.25;
+  mask-image: radial-gradient(circle at center, black, transparent 75%);
+  pointer-events: none;
+}
+
+.bg-app::after {
+  content: "";
+  position: absolute;
+  inset-inline: 15%;
+  top: -20%;
+  height: 280px;
+  background: radial-gradient(
+    circle at top,
+    color-mix(in oklch, var(--primary) 60%, transparent),
+    transparent 70%
+  );
+  opacity: 0.65;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* 页面内主内容容器的微弱入场动效 */
+.page-shell {
+  animation: pageFadeIn 0.6s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
