@@ -536,7 +536,7 @@ export function KOLDetailPage({ kol: initialKol }: KOLDetailPageProps) {
                     <div className="text-muted-foreground">{t.loading_analytics}</div>
                   </div>
                 ) : history.length > 0 ? (
-                  <MetricsChart data={history} />
+                  <MetricsChart data={history} days={days} />
                 ) : (
                   <div className="flex items-center justify-center h-64">
                     <div className="text-muted-foreground">{t.no_historical_data}</div>

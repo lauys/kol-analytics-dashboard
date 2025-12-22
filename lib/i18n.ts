@@ -206,8 +206,8 @@ export const translations = {
   },
   zh: {
     // Header
-    dashboard_title: "KOL 分析仪表板",
-    dashboard_subtitle: "追踪和分析 Twitter 影响力指标",
+    dashboard_title: "KOL 效能分析看板",
+    dashboard_subtitle: "洞察社交影响力，量化传播核心指标",
     search_placeholder: "按名称或用户名搜索 KOL...",
     filter_all: "全部 KOL",
     filter_active: "仅活跃",

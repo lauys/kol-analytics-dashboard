@@ -9,9 +9,10 @@ import { translations } from "@/lib/i18n"
 
 interface MetricsChartProps {
   data: Snapshot[]
+  days?: number
 }
 
-export function MetricsChart({ data }: MetricsChartProps) {
+export function MetricsChart({ data, days }: MetricsChartProps) {
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -48,9 +49,23 @@ export function MetricsChart({ data }: MetricsChartProps) {
     }
 
     // 将 Map 转成数组，并按日期顺序输出
-    return Array.from(byDay.values())
-      .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime())
-      .map((entry) => {
+    let daily = Array.from(byDay.values()).sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime())
+
+    // 根据选择的时间范围对点位进行采样：
+    // 7 天 => 7 个点，30 天 => 30 个点，90 天 => 90 个点（不够就用现有数量）
+    if (days && days > 0 && daily.length > days) {
+      const targetPoints = days
+      const step = (daily.length - 1) / (targetPoints - 1)
+      const sampled: typeof daily = []
+      for (let i = 0; i < targetPoints; i++) {
+        const idx = Math.round(i * step)
+        const clampedIdx = Math.min(idx, daily.length - 1)
+        sampled.push(daily[clampedIdx])
+      }
+      daily = sampled
+    }
+
+    return daily.map((entry) => {
         const date = entry.dateObj
 
         // X 轴显示日期（按语言本地化），不带时间
