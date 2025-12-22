@@ -56,6 +56,8 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("24h")
   const [kols, setKols] = useState<RankingKOL[]>([])
   const [loading, setLoading] = useState(false)
+  // 简单的前端缓存，避免切换时间维度 / 榜单类型时产生“整页刷新”的感觉
+  const [cache, setCache] = useState<Record<string, RankingKOL[]>>({})
   const [totalSortField, setTotalSortField] = useState<TotalSortField>("followers")
   const [totalSortOrder, setTotalSortOrder] = useState<SortOrder>("desc")
   const [growthSortField, setGrowthSortField] = useState<GrowthSortField>("growth")
@@ -77,6 +79,19 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   }, [activeTab, timePeriod, searchQuery, filter])
 
   const fetchRankings = async () => {
+    const key = JSON.stringify({
+      type: activeTab,
+      period: timePeriod,
+      search: searchQuery.trim(),
+      filter: filter || "all",
+    })
+
+    // 如果已经有缓存数据，直接使用缓存并跳过网络请求
+    if (cache[key]) {
+      setKols(cache[key])
+      return
+    }
+
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -94,6 +109,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
       if (response.ok) {
         const data = await response.json()
         setKols(data)
+        setCache((prev) => ({
+          ...prev,
+          [key]: data,
+        }))
       }
     } catch (error) {
       console.error("[v0] Failed to fetch rankings:", error)
