@@ -143,7 +143,7 @@ export default function Page() {
         )}
 
         <div className="mb-6 grid gap-5 md:grid-cols-4">
-          <Card className="gradient-border relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:shadow-[0_22px_65px_rgba(59,130,246,0.55)]">
+          <Card className="card-enter gradient-border relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_22px_65px_rgba(59,130,246,0.55)]">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -159,11 +159,11 @@ export default function Page() {
               <Users className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tracking-tight">{stats.totalKols}</div>
+              <div className="text-3xl font-bold tracking-tight number-enter">{stats.totalKols}</div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-success/60 hover:shadow-[0_22px_60px_rgba(34,197,94,0.4)]">
+          <Card className="card-enter-delay-1 relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-all duration-300 ease-out hover:-translate-y-1 hover:border-success/60 hover:shadow-[0_22px_60px_rgba(34,197,94,0.4)]">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -179,11 +179,11 @@ export default function Page() {
               <Activity className="h-5 w-5 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tracking-tight">{stats.activeKols}</div>
+              <div className="text-3xl font-bold tracking-tight number-enter">{stats.activeKols}</div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-destructive/60 hover:shadow-[0_22px_60px_rgba(248,113,113,0.4)]">
+          <Card className="card-enter-delay-2 relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-all duration-300 ease-out hover:-translate-y-1 hover:border-destructive/60 hover:shadow-[0_22px_60px_rgba(248,113,113,0.4)]">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -201,11 +201,11 @@ export default function Page() {
               <Skull className="h-5 w-5 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tracking-tight">{stats.zombieKols}</div>
+              <div className="text-3xl font-bold tracking-tight number-enter">{stats.zombieKols}</div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-chart-2/70 hover:shadow-[0_22px_60px_rgba(56,189,248,0.5)]">
+          <Card className="card-enter-delay-3 relative overflow-hidden border-border/70 bg-card/75 backdrop-blur transition-all duration-300 ease-out hover:-translate-y-1 hover:border-chart-2/70 hover:shadow-[0_22px_60px_rgba(56,189,248,0.5)]">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -223,30 +223,9 @@ export default function Page() {
               <TrendingUp className="h-5 w-5 text-chart-2" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tracking-tight">{stats.avgGrowth}%</div>
+              <div className="text-3xl font-bold tracking-tight number-enter">{stats.avgGrowth}%</div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* 氛围文案条：位于顶部统计卡片与排行榜之间 */}
-        <div className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-r from-primary/10 via-sky-500/10 to-purple-500/10 px-4 py-3 md:px-6 md:py-4 shadow-[0_18px_60px_rgba(15,23,42,0.8)]">
-            {/* 背景光效 */}
-            <div className="pointer-events-none absolute inset-0 opacity-70">
-              <div className="absolute -left-10 top-1/2 h-32 w-32 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl" />
-              <div className="absolute right-[-40px] top-[-40px] h-40 w-64 rounded-full bg-fuchsia-500/25 blur-3xl" />
-            </div>
-
-            <div className="relative flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-sky-200/80">
-                <span className="inline-flex h-1.5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-fuchsia-400 shadow-[0_0_18px_rgba(56,189,248,0.8)]" />
-                <span>Web3 Signal Radar</span>
-              </div>
-              <p className="max-w-2xl text-sm text-slate-100/85 md:text-[0.92rem]">
-                {t.web3_pulse_tagline}
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* @Brain_KOL_DAO Interaction Cards - admin only */}

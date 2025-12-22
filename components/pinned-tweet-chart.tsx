@@ -272,13 +272,14 @@ export function PinnedTweetChart({ kolId, days = 30 }: PinnedTweetChartProps) {
                 <LineChart data={chartData}>
                   <XAxis
                     dataKey="date"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
+                    tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 12 }}
                     angle={-45}
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis 
+                    tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 12 }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",

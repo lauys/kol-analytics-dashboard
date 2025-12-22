@@ -192,7 +192,7 @@ export const translations = {
     followers_over_time: "Followers Over Time",
     following_over_time: "Following Over Time",
     tweets_over_time: "Tweets Over Time",
-    web3_pulse_tagline: "Capturing every authentic pulse of value in the Web3 ecosystem",
+    web3_pulse_tagline: "Reject false prosperity, make every connection a growth opportunity.",
 
     // Bio History
     bio_change_history: "Bio Change History",
@@ -388,7 +388,7 @@ export const translations = {
     followers_over_time: "粉丝数随时间变化",
     following_over_time: "关注数随时间变化",
     tweets_over_time: "推文数随时间变化",
-    web3_pulse_tagline: "正在捕捉 Web3 生态中每一次真实价值脉动",
+    web3_pulse_tagline: "拒绝虚假繁荣，让每一次连接都成为增长的契机。",
 
     // Bio History
     bio_change_history: "简介变更历史",

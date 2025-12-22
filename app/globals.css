@@ -197,7 +197,28 @@
 
 /* 页面内主内容容器的微弱入场动效 */
 .page-shell {
-  animation: pageFadeIn 0.6s ease-out;
+  animation: pageFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 数据加载时的淡入动画类 */
+.animate-fadeIn {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 数字变化动画 */
+@keyframes numberCount {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.number-enter {
+  animation: numberCount 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes pageFadeIn {
@@ -209,4 +230,239 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 全局缓动动画 */
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 数据加载动画 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 全局过渡效果 */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* 卡片和容器进入动画 */
+.card-enter {
+  animation: slideInFromBottom 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.card-enter-delay-1 {
+  animation: slideInFromBottom 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+}
+
+.card-enter-delay-2 {
+  animation: slideInFromBottom 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+}
+
+.card-enter-delay-3 {
+  animation: slideInFromBottom 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s backwards;
+}
+
+/* 表格行进入动画 */
+.table-row-enter {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+/* 加载骨架屏动画 */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* 数据加载时的淡入动画 */
+.data-loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Tooltip 样式 - 彻底禁用 tw-animate-css 动画 */
+[data-slot="tooltip-content"],
+[data-radix-tooltip-content] {
+  /* 禁用动画 */
+  animation: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  /* 重置 tw-animate-css 变量，防止 translate 动画 */
+  --tw-enter-opacity: 1 !important;
+  --tw-enter-scale: 1 !important;
+  --tw-enter-translate-x: 0 !important;
+  --tw-enter-translate-y: 0 !important;
+  --tw-exit-opacity: 0 !important;
+  --tw-exit-scale: 1 !important;
+  --tw-exit-translate-x: 0 !important;
+  --tw-exit-translate-y: 0 !important;
+  /* 只保留 opacity 过渡 */
+  transition: opacity 0.12s ease-out !important;
+}
+
+/* 禁用 animate-in 类的 transform */
+[data-slot="tooltip-content"].animate-in,
+[data-radix-tooltip-content].animate-in {
+  animation: none !important;
+  --tw-enter-translate-x: 0 !important;
+  --tw-enter-translate-y: 0 !important;
+}
+
+[data-slot="tooltip-content"][data-state="open"],
+[data-radix-tooltip-content][data-state="open"] {
+  opacity: 1 !important;
+}
+
+[data-slot="tooltip-content"][data-state="closed"],
+[data-radix-tooltip-content][data-state="closed"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 确保图表坐标文字颜色为浅色 */
+.recharts-wrapper .recharts-cartesian-axis-tick text,
+.recharts-cartesian-axis-tick text,
+.recharts-xAxis .recharts-cartesian-axis-tick text,
+.recharts-yAxis .recharts-cartesian-axis-tick text {
+  fill: rgba(255, 255, 255, 0.6) !important;
+  stroke: none !important;
+}
+
+/* 按钮和交互元素的缓动效果 */
+button, a, [role="button"] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover, a:hover, [role="button"]:hover {
+  transform: translateY(-1px);
+}
+
+button:active, a:active, [role="button"]:active {
+  transform: translateY(0);
+}
+
+/* 卡片悬停效果 */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }

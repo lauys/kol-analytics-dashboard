@@ -127,15 +127,13 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
                 dataKey="date"
-                className="text-xs"
-                tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 12 }}
                 angle={-45}
                 textAnchor="end"
                 height={80}
               />
               <YAxis
-                className="text-xs"
-                tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 12 }}
                 tickFormatter={(value) => formatNumber(value)}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -163,15 +161,13 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                  tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 11 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                  tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 11 }}
                   tickFormatter={(value) => formatNumber(value)}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -198,15 +194,13 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                  tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 11 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
+                  tick={{ fill: "rgba(255, 255, 255, 0.6)", fontSize: 11 }}
                   tickFormatter={(value) => formatNumber(value)}
                 />
                 <Tooltip content={<CustomTooltip />} />

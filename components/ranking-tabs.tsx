@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -22,8 +22,16 @@ import {
   ArrowDown,
   ExternalLink,
 } from "lucide-react"
-import { formatNumber } from "@/lib/utils"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { formatNumber, cn } from "@/lib/utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
 import type { KOL } from "@/lib/types"
@@ -56,8 +64,12 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("24h")
   const [kols, setKols] = useState<RankingKOL[]>([])
   const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 100
   // 简单的前端缓存，避免切换时间维度 / 榜单类型时产生“整页刷新”的感觉
   const [cache, setCache] = useState<Record<string, RankingKOL[]>>({})
+  // 跟踪已预加载的 key，避免重复请求
+  const preloadedKeysRef = useRef<Set<string>>(new Set())
   const [totalSortField, setTotalSortField] = useState<TotalSortField>("followers")
   const [totalSortOrder, setTotalSortOrder] = useState<SortOrder>("desc")
   const [growthSortField, setGrowthSortField] = useState<GrowthSortField>("growth")
@@ -74,7 +86,67 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     }
   }, [isAdmin, activeTab])
 
+  // 页面加载时预加载所有时间维度的数据（静默加载，不显示 loading）
   useEffect(() => {
+    const preloadAllPeriods = async () => {
+      const tabs: RankingType[] = isAdmin ? ["total", "growth", "governance", "contribution"] : ["total", "growth", "governance"]
+      const periods: TimePeriod[] = ["24h", "7d", "30d"]
+      
+      // 静默预加载所有组合，不显示 loading
+      const preloadPromises = tabs.flatMap((tab) =>
+        periods.map(async (period) => {
+          const key = JSON.stringify({
+            type: tab,
+            period,
+            search: searchQuery.trim(),
+            filter: filter || "all",
+          })
+          
+          // 如果已预加载或已有缓存，跳过
+          if (preloadedKeysRef.current.has(key)) return
+          
+          // 标记为正在预加载
+          preloadedKeysRef.current.add(key)
+          
+          try {
+            const params = new URLSearchParams({
+              type: tab,
+              period,
+            })
+            if (searchQuery.trim()) {
+              params.append("search", searchQuery.trim())
+            }
+            if (filter && filter !== "all") {
+              params.append("filter", filter)
+            }
+            
+            const response = await fetch(`/api/rankings?${params.toString()}`)
+            if (response.ok) {
+              const data = await response.json()
+              setCache((prev) => ({
+                ...prev,
+                [key]: data,
+              }))
+            }
+          } catch (error) {
+            // 静默失败，不影响用户体验
+            console.error(`[v0] Failed to preload ${tab}-${period}:`, error)
+          }
+        })
+      )
+      
+      // 并行加载所有数据，不阻塞 UI
+      Promise.all(preloadPromises).catch(() => {
+        // 静默处理错误
+      })
+    }
+    
+    preloadAllPeriods()
+  }, [searchQuery, filter, isAdmin]) // 当搜索或筛选变化时，重新预加载
+
+  // 切换榜单/时间维度/搜索/筛选时，从缓存读取或加载，并重置到第一页
+  useEffect(() => {
+    setCurrentPage(1)
     fetchRankings()
   }, [activeTab, timePeriod, searchQuery, filter])
 
@@ -89,9 +161,11 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     // 如果已经有缓存数据，直接使用缓存并跳过网络请求
     if (cache[key]) {
       setKols(cache[key])
+      setLoading(false)
       return
     }
 
+    // 只有在没有缓存时才显示 loading
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -294,8 +368,98 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     )
   }
 
+  // 分页工具函数
+  const getPaginatedData = <T,>(data: T[]) => {
+    const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE)
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    const paginatedData = data.slice(startIndex, endIndex)
+    return { paginatedData, totalPages, totalItems: data.length }
+  }
+
+  // 渲染分页组件
+  const renderPagination = (totalPages: number, totalItems: number) => {
+    if (totalPages <= 1) return null
+
+    const pages = []
+    const maxVisiblePages = 7
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 5; i++) pages.push(i)
+        pages.push("ellipsis")
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push("ellipsis")
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        pages.push("ellipsis")
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+        pages.push("ellipsis")
+        pages.push(totalPages)
+      }
+    }
+
+    return (
+      <div className="mt-6 flex flex-col items-center gap-4">
+        <div className="text-sm text-muted-foreground">
+          共 {totalItems} 条，第 {currentPage} / {totalPages} 页
+        </div>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (currentPage > 1) setCurrentPage(currentPage - 1)
+                }}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            {pages.map((page, index) => (
+              <PaginationItem key={index}>
+                {page === "ellipsis" ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage(page as number)
+                    }}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                )}
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (currentPage < totalPages) setCurrentPage(currentPage + 1)
+                }}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    )
+  }
+
   const renderTotalRanking = () => {
     const sortedKols = getSortedTotalKols()
+    const { paginatedData, totalPages, totalItems } = getPaginatedData(sortedKols)
 
     if (sortedKols.length === 0 && !loading) {
       return (
@@ -308,8 +472,9 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     }
 
     return (
-      <div className="w-full overflow-x-auto">
-        <Table className="min-w-[720px] text-sm md:text-base">
+      <>
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[720px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-16">{t("rank")}</TableHead>
@@ -353,80 +518,88 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedKols.map((kol, index) => (
-          <TableRow
-            key={kol.id}
-            className="cursor-pointer hover:bg-accent/50 transition-colors"
-            onClick={() => handleRowClick(kol)}
-          >
-            <TableCell className="font-bold">
-              {index < 3 ? (
-                <div className="flex items-center justify-center">
-                  <Trophy
-                    className={`h-5 w-5 ${
-                      index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-amber-600"
-                    }`}
-                  />
-                </div>
-              ) : (
-                <span className="text-muted-foreground">#{index + 1}</span>
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border">
-                  <AvatarImage src={kol.avatar_url || undefined} />
-                  <AvatarFallback>{(kol.display_name || "?")[0]}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-semibold">{kol.display_name}</div>
-                  <div className="text-sm text-muted-foreground">@{kol.twitter_username}</div>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell className="text-right font-mono font-bold text-lg">
-              {formatNumber(kol.latest_followers)}
-            </TableCell>
-            <TableCell className="text-right">
-              <div
-                className={`flex items-center justify-end gap-1 font-mono ${
-                  (kol.followers_change_24h || 0) > 0
-                    ? "text-green-500"
-                    : (kol.followers_change_24h || 0) < 0
-                      ? "text-red-500"
-                      : ""
-                }`}
+          {paginatedData.map((kol, index) => {
+            const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+            const delay = Math.min(index * 0.03, 0.5) // 每行延迟最多0.5秒
+            return (
+              <TableRow
+                key={kol.id || `kol-${index}-${globalRank}`}
+                className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
+                style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
+                onClick={() => handleRowClick(kol)}
               >
-                {getTrendIcon(kol.followers_change_24h || 0)}
-                {(kol.followers_change_24h || 0) > 0 ? "+" : ""}
-                {formatNumber(kol.followers_change_24h || 0)}
-              </div>
-            </TableCell>
-            <TableCell className="text-right">
-              <span
-                className={`font-mono font-semibold ${
-                  (kol.followers_growth_rate_24h || 0) > 0
-                    ? "text-green-500"
-                    : (kol.followers_growth_rate_24h || 0) < 0
-                      ? "text-red-500"
-                      : ""
-                }`}
-              >
-                {(kol.followers_growth_rate_24h || 0) > 0 ? "+" : ""}
-                {(kol.followers_growth_rate_24h || 0).toFixed(2)}%
-              </span>
-            </TableCell>
-            <TableCell className="text-right font-mono">{formatNumber(kol.latest_tweets)}</TableCell>
-          </TableRow>
-        ))}
+              <TableCell className="font-bold">
+                {globalRank <= 3 ? (
+                  <div className="flex items-center justify-center">
+                    <Trophy
+                      className={`h-5 w-5 ${
+                        globalRank === 1 ? "text-yellow-500" : globalRank === 2 ? "text-gray-400" : "text-amber-600"
+                      }`}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">#{globalRank}</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border">
+                    <AvatarImage src={kol.avatar_url || undefined} />
+                    <AvatarFallback>{(kol.display_name || "?")[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-semibold">{kol.display_name}</div>
+                    <div className="text-sm text-muted-foreground">@{kol.twitter_username}</div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-right font-mono font-bold text-lg">
+                {formatNumber(kol.latest_followers)}
+              </TableCell>
+              <TableCell className="text-right">
+                <div
+                  className={`flex items-center justify-end gap-1 font-mono ${
+                    (kol.followers_change_24h || 0) > 0
+                      ? "text-green-500"
+                      : (kol.followers_change_24h || 0) < 0
+                        ? "text-red-500"
+                        : ""
+                  }`}
+                >
+                  {getTrendIcon(kol.followers_change_24h || 0)}
+                  {(kol.followers_change_24h || 0) > 0 ? "+" : ""}
+                  {formatNumber(kol.followers_change_24h || 0)}
+                </div>
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={`font-mono font-semibold ${
+                    (kol.followers_growth_rate_24h || 0) > 0
+                      ? "text-green-500"
+                      : (kol.followers_growth_rate_24h || 0) < 0
+                        ? "text-red-500"
+                        : ""
+                  }`}
+                >
+                  {(kol.followers_growth_rate_24h || 0) > 0 ? "+" : ""}
+                  {(kol.followers_growth_rate_24h || 0).toFixed(2)}%
+                </span>
+              </TableCell>
+              <TableCell className="text-right font-mono">{formatNumber(kol.latest_tweets)}</TableCell>
+            </TableRow>
+            )
+          })}
       </TableBody>
     </Table>
       </div>
+        {renderPagination(totalPages, totalItems)}
+      </>
     )
   }
 
   const renderGrowthRanking = () => {
     const sortedKols = getSortedGrowthKols()
+    const { paginatedData, totalPages, totalItems } = getPaginatedData(sortedKols)
 
     if (sortedKols.length === 0 && !loading) {
       return (
@@ -440,14 +613,29 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-center gap-3 md:gap-4">
-          <Button variant={timePeriod === "24h" ? "default" : "outline"} size="sm" onClick={() => setTimePeriod("24h")}>
+        <div className="flex justify-center gap-3 md:gap-4 px-6 pt-6">
+          <Button 
+            variant={timePeriod === "24h" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setTimePeriod("24h")}
+            className={timePeriod !== "24h" ? "hover:text-foreground" : ""}
+          >
             {t("time_24h")}
           </Button>
-          <Button variant={timePeriod === "7d" ? "default" : "outline"} size="sm" onClick={() => setTimePeriod("7d")}>
+          <Button 
+            variant={timePeriod === "7d" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setTimePeriod("7d")}
+            className={timePeriod !== "7d" ? "hover:text-foreground" : ""}
+          >
             {t("time_7d")}
           </Button>
-          <Button variant={timePeriod === "30d" ? "default" : "outline"} size="sm" onClick={() => setTimePeriod("30d")}>
+          <Button 
+            variant={timePeriod === "30d" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setTimePeriod("30d")}
+            className={timePeriod !== "30d" ? "hover:text-foreground" : ""}
+          >
             {t("time_30d")}
           </Button>
         </div>
@@ -480,26 +668,29 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedKols.map((kol, index) => {
+            {paginatedData.map((kol, index) => {
+              const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+              const delay = Math.min(index * 0.03, 0.5)
               const growth = getGrowthValue(kol)
               const growthRate = getGrowthRate(kol)
               return (
                 <TableRow
-                  key={kol.id}
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
+                  key={kol.id || `kol-${index}-${globalRank}`}
+                  className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
+                  style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
                   onClick={() => handleRowClick(kol)}
                 >
                   <TableCell className="font-bold">
-                    {index < 3 ? (
+                    {globalRank <= 3 ? (
                       <div className="flex items-center justify-center">
                         <Zap
                           className={`h-5 w-5 ${
-                            index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-amber-600"
+                            globalRank === 1 ? "text-yellow-500" : globalRank === 2 ? "text-gray-400" : "text-amber-600"
                           }`}
                         />
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">#{index + 1}</span>
+                      <span className="text-muted-foreground">#{globalRank}</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -538,12 +729,14 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </TableBody>
         </Table>
         </div>
+        {renderPagination(totalPages, totalItems)}
       </div>
     )
   }
 
   const renderGovernanceRanking = () => {
     const sortedKols = getSortedGovKols()
+    const { paginatedData, totalPages, totalItems } = getPaginatedData(sortedKols)
 
     if (sortedKols.length === 0 && !loading) {
       return (
@@ -557,11 +750,12 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-center gap-3 md:gap-4">
+        <div className="flex justify-center gap-3 md:gap-4 pt-6">
           <Button
             variant={timePeriod === "24h" ? "default" : "outline"}
             size="sm"
             onClick={() => setTimePeriod("24h")}
+            className={timePeriod !== "24h" ? "hover:text-foreground" : ""}
           >
             {t("time_24h")}
           </Button>
@@ -569,6 +763,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             variant={timePeriod === "7d" ? "default" : "outline"}
             size="sm"
             onClick={() => setTimePeriod("7d")}
+            className={timePeriod !== "7d" ? "hover:text-foreground" : ""}
           >
             {t("time_7d")}
           </Button>
@@ -576,6 +771,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             variant={timePeriod === "30d" ? "default" : "outline"}
             size="sm"
             onClick={() => setTimePeriod("30d")}
+            className={timePeriod !== "30d" ? "hover:text-foreground" : ""}
           >
             {t("time_30d")}
           </Button>
@@ -618,19 +814,22 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedKols.map((kol, index) => {
+            {paginatedData.map((kol, index) => {
+              const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+              const delay = Math.min(index * 0.03, 0.5)
               const inactive = isInactive(kol.latest_time)
               const metrics = getGovernanceMetricsForPeriod(kol)
 
               return (
                 <TableRow
-                  key={kol.id}
-                  className={`cursor-pointer hover:bg-accent/50 transition-colors ${
+                  key={kol.id || `kol-${index}-${globalRank}`}
+                  className={`cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1 ${
                     inactive ? "bg-destructive/5" : ""
                   }`}
+                  style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
                   onClick={() => handleRowClick(kol)}
                 >
-                  <TableCell className="font-semibold text-muted-foreground">#{index + 1}</TableCell>
+                  <TableCell className="font-semibold text-muted-foreground">#{globalRank}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border">
@@ -674,11 +873,14 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </TableBody>
         </Table>
         </div>
+        {renderPagination(totalPages, totalItems)}
       </div>
     )
   }
 
   const renderContributionRanking = () => {
+    const { paginatedData, totalPages, totalItems } = getPaginatedData(kols)
+    
     if (kols.length === 0 && !loading) {
       return (
         <div className="p-8 text-center text-muted-foreground">
@@ -690,8 +892,12 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     }
 
     return (
-      <div className="w-full overflow-x-auto">
-        <Table className="min-w-[780px] text-sm md:text-base">
+      <>
+        <div className="px-6 pt-6 pb-4 border-b border-border/50">
+          <p className="text-sm text-foreground/90 font-medium">量化与官方账号的互动贡献。</p>
+        </div>
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[780px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-16">{t("rank")}</TableHead>
@@ -703,7 +909,9 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {kols.map((kol, index) => {
+          {paginatedData.map((kol, index) => {
+            const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
+            const delay = Math.min(index * 0.03, 0.5)
             const score = kol.contribution_score || 0
             const rate = Math.min(Math.max(kol.interaction_rate || 0, 0), 100)
             const retweets = kol.retweets || 0  // KOL转推官方推文的次数
@@ -718,21 +926,22 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
 
             return (
               <TableRow
-                key={kol.id}
-                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                key={kol.id || `kol-${index}-${globalRank}`}
+                className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
+                style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
                 onClick={() => handleRowClick(kol)}
               >
                 <TableCell className="font-semibold text-muted-foreground">
-                  {index < 3 ? (
+                  {globalRank <= 3 ? (
                     <div className="flex items-center justify-center">
                       <Trophy
                         className={`h-5 w-5 ${
-                          index === 0 ? "text-amber-400" : index === 1 ? "text-slate-300" : "text-yellow-700"
+                          globalRank === 1 ? "text-amber-400" : globalRank === 2 ? "text-slate-300" : "text-yellow-700"
                         }`}
                       />
                     </div>
                   ) : (
-                    <>#{index + 1}</>
+                    <>#{globalRank}</>
                   )}
                 </TableCell>
                 <TableCell>
@@ -809,96 +1018,166 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         </TableBody>
       </Table>
       </div>
+        {renderPagination(totalPages, totalItems)}
+      </>
     )
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full">
-      <TabsList
-        className={`grid w-full mb-6 rounded-2xl bg-muted/40 p-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <TabsTrigger
-              value="total"
-              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
-                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-sky-500/15
-                         data-[state=active]:shadow-[0_0_18px_rgba(56,189,248,0.45)] data-[state=active]:border-primary/70
-                         data-[state=active]:scale-[1.02] border border-transparent"
-            >
-              <Trophy className="h-4 w-4" />
-              {t("total_ranking")}
-            </TabsTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            粉丝实力榜：衡量共识沉淀的深度。
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <TabsTrigger
-              value="growth"
-              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
-                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400/15 data-[state=active]:to-sky-500/15
-                         data-[state=active]:shadow-[0_0_18px_rgba(52,211,153,0.45)] data-[state=active]:border-emerald-400/70
-                         data-[state=active]:scale-[1.02] border border-transparent"
-            >
-              <Zap className="h-4 w-4" />
-              {t("growth_ranking")}
-            </TabsTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            增长魄力榜：发现正在涌现的价值信号。
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <TabsTrigger
-              value="governance"
-              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
-                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-500/15 data-[state=active]:to-purple-500/15
-                         data-[state=active]:shadow-[0_0_18px_rgba(168,85,247,0.5)] data-[state=active]:border-fuchsia-400/70
-                         data-[state=active]:scale-[1.02] border border-transparent"
-            >
-              <ActivityIcon className="h-4 w-4" />
-              {t("governance_activity")}
-            </TabsTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            活跃榜：致敬持续输出的建设者。
-          </TooltipContent>
-        </Tooltip>
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full gap-6">
+      <TabsList className={cn(
+        "!h-auto !flex !w-full rounded-2xl bg-card/60 border border-border/50 p-1.5 grid gap-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm",
+        isAdmin ? "grid-cols-4" : "grid-cols-3"
+      )}>
+        <TabsTrigger
+          value="total"
+          className={cn(
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            activeTab === "total"
+              ? "!bg-gradient-to-br !from-blue-500 !to-blue-600 !text-white shadow-lg"
+              : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Trophy className={cn(
+              "h-4 w-4",
+              activeTab === "total" ? "text-yellow-300" : "text-muted-foreground/60"
+            )} />
+            <span className="text-sm font-medium">{t("total_ranking")}</span>
+          </div>
+          <div className={cn(
+            "text-xs text-center mt-0.5",
+            activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
+          )}>
+            衡量共识沉淀的深度
+          </div>
+        </TabsTrigger>
+        <TabsTrigger
+          value="growth"
+          className={cn(
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            activeTab === "growth"
+              ? "!bg-gradient-to-br !from-emerald-500 !to-teal-500 !text-white shadow-lg"
+              : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className={cn(
+              "h-4 w-4",
+              activeTab === "growth" ? "text-yellow-200" : "text-muted-foreground/60"
+            )} />
+            <span className="text-sm font-medium">{t("growth_ranking")}</span>
+          </div>
+          <div className={cn(
+            "text-xs text-center mt-0.5",
+            activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
+          )}>
+            发现正在涌现的价值信号
+          </div>
+        </TabsTrigger>
+        <TabsTrigger
+          value="governance"
+          className={cn(
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            activeTab === "governance"
+              ? "!bg-gradient-to-br !from-fuchsia-500 !to-pink-500 !text-white shadow-lg"
+              : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <ActivityIcon className={cn(
+              "h-4 w-4",
+              activeTab === "governance" ? "text-pink-200" : "text-muted-foreground/60"
+            )} />
+            <span className="text-sm font-medium">{t("governance_activity")}</span>
+          </div>
+          <div className={cn(
+            "text-xs text-center mt-0.5",
+            activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
+          )}>
+            致敬持续输出的建设者
+          </div>
+        </TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="contribution"
-            className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
-                       data-[state=active]:text-amber-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400/20 data-[state=active]:to-purple-500/20
-                       data-[state=active]:shadow-[0_0_18px_rgba(251,191,36,0.55)] data-[state=active]:border-amber-300/80
-                       data-[state=active]:scale-[1.02] border border-transparent"
+            className={cn(
+              "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+              activeTab === "contribution"
+                ? "!bg-gradient-to-br !from-amber-500 !to-orange-500 !text-white shadow-lg"
+                : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
+            )}
           >
-            <Trophy className="h-4 w-4 text-amber-500" />
-            {t("contribution")}
+            <div className="flex items-center gap-2">
+              <Trophy className={cn(
+                "h-4 w-4",
+                activeTab === "contribution" ? "text-yellow-200" : "text-muted-foreground/60"
+              )} />
+              <span className="text-sm font-medium">{t("contribution")}</span>
+            </div>
+            <div className={cn(
+              "text-xs text-center mt-0.5",
+              activeTab === "contribution" ? "text-white/80" : "text-muted-foreground/50"
+            )}>
+              贡献度排名
+            </div>
           </TabsTrigger>
         )}
       </TabsList>
 
       <TabsContent value="total" className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        {loading ? <div className="p-8 text-center">{t("loading_analytics")}</div> : renderTotalRanking()}
+        {loading ? (
+          <div className="p-8 text-center animate-pulse">
+            <div className="inline-flex items-center gap-2 text-muted-foreground">
+              <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span>{t("loading_analytics")}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fadeIn">{renderTotalRanking()}</div>
+        )}
       </TabsContent>
 
       <TabsContent value="growth" className="space-y-4">
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden pt-5">
-          {loading ? <div className="p-8 text-center">{t("loading_analytics")}</div> : renderGrowthRanking()}
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center animate-pulse">
+              <div className="inline-flex items-center gap-2 text-muted-foreground">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>{t("loading_analytics")}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="animate-fadeIn">{renderGrowthRanking()}</div>
+          )}
         </div>
       </TabsContent>
 
-      <TabsContent value="governance" className="rounded-xl border bg-card shadow-sm overflow-hidden pt-5">
-        {loading ? <div className="p-8 text-center">{t("loading_analytics")}</div> : renderGovernanceRanking()}
+      <TabsContent value="governance" className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center animate-pulse">
+            <div className="inline-flex items-center gap-2 text-muted-foreground">
+              <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span>{t("loading_analytics")}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fadeIn">{renderGovernanceRanking()}</div>
+        )}
       </TabsContent>
 
       {isAdmin && (
         <TabsContent value="contribution" className="rounded-xl border bg-card shadow-sm overflow-hidden">
-          {loading ? <div className="p-8 text-center">{t("loading_analytics")}</div> : renderContributionRanking()}
+          {loading ? (
+            <div className="p-8 text-center animate-pulse">
+              <div className="inline-flex items-center gap-2 text-muted-foreground">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>{t("loading_analytics")}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="animate-fadeIn">{renderContributionRanking()}</div>
+          )}
         </TabsContent>
       )}
     </Tabs>

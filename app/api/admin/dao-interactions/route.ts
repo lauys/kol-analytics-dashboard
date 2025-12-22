@@ -68,15 +68,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Failed to fetch KOLs" }, { status: 500 })
     }
 
-    // Step 3: 遍历每个 KOL 的时间线，查找对官方推文的互动
+    // Step 3: 方法1 - 直接获取官方推文的回复列表（更准确）
     const allInteractions: KolInteraction[] = []
+    const kolUsernames = new Set(kols.map((k) => k.twitter_username).filter(Boolean))
+    
+    console.log(`[v0] Fetching replies to ${officialTweets.length} official tweets`)
+    for (const officialTweet of officialTweets) {
+      try {
+        const replies = await fetchRepliesToTweet(apiKey, officialTweet.id, kolUsernames, kols)
+        allInteractions.push(...replies)
+        // 限流
+        await new Promise((resolve) => setTimeout(resolve, 800))
+      } catch (error) {
+        console.error(`[v0] Failed to fetch replies for tweet ${officialTweet.id}:`, error)
+      }
+    }
 
+    // Step 3b: 方法2 - 遍历每个 KOL 的时间线，查找对官方推文的互动（作为补充）
+    console.log(`[v0] Also checking KOL timelines for interactions`)
     for (const kol of kols) {
       if (!kol.twitter_username) continue
 
       try {
         const kolInteractions = await fetchKolDaoInteractions(apiKey, kol, officialIds)
-        allInteractions.push(...kolInteractions)
+        // 去重：如果已经在方法1中找到，就不重复添加
+        for (const interaction of kolInteractions) {
+          const exists = allInteractions.some(
+            (existing) =>
+              existing.kol_id === interaction.kol_id &&
+              existing.my_tweet_id === interaction.my_tweet_id &&
+              existing.official_tweet_id === interaction.official_tweet_id,
+          )
+          if (!exists) {
+            allInteractions.push(interaction)
+          }
+        }
 
         // 简单限流，避免触发第三方 API 频率限制
         await new Promise((resolve) => setTimeout(resolve, 1200))
@@ -231,6 +257,119 @@ async function fetchOfficialTweets(apiKey: string, limit: number): Promise<Offic
   return officialTweets
 }
 
+// 直接获取官方推文的回复列表（更准确的方法）
+async function fetchRepliesToTweet(
+  apiKey: string,
+  tweetId: string,
+  kolUsernames: Set<string>,
+  kols: Array<{ id: string; twitter_username: string; display_name: string; avatar_url: string | null }>,
+): Promise<KolInteraction[]> {
+  try {
+    const apiUrl = `https://twitter.good6.top/api/base/apitools/tweetTimeline?apiKey=${encodeURIComponent(apiKey)}&tweetId=${encodeURIComponent(tweetId)}`
+    const resp = await fetch(apiUrl, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+
+    if (!resp.ok) {
+      throw new Error(`TweetTimeline HTTP error ${resp.status}`)
+    }
+
+    const data = await resp.json()
+    if (data.code !== 1 || !data.data) {
+      // 如果没有回复或 API 返回错误，返回空数组
+      return []
+    }
+
+    let inner = data.data
+    if (typeof inner === "string") {
+      inner = JSON.parse(inner)
+    }
+
+    const instructions = inner?.data?.threaded_conversation_with_injections_v2?.instructions || []
+    const interactions: KolInteraction[] = []
+
+    // 构建回复链映射：tweetId -> 所有回复它的推文 ID
+    const replyChain = new Map<string, Set<string>>()
+    const allTweets = new Map<string, { tweet: any; legacy: any; user: any }>()
+
+    // 第一遍：收集所有推文和构建回复链
+    for (const instruction of instructions) {
+      if (instruction.type === "TimelineAddEntries" && instruction.entries) {
+        for (const entry of instruction.entries) {
+          if (entry.entryId?.startsWith("tweet-")) {
+            const tweet = entry.content?.itemContent?.tweet_results?.result
+            if (!tweet || tweet.__typename === "TweetUnavailable") continue
+
+            const legacy = tweet.legacy || tweet.tweet?.legacy
+            const myTweetId = String(tweet.rest_id || legacy?.id_str)
+            const replyToId = legacy?.in_reply_to_status_id_str
+            const user = tweet.core?.user_results?.result || tweet.tweet?.core?.user_results?.result
+
+            allTweets.set(myTweetId, { tweet, legacy, user })
+
+            if (replyToId) {
+              const replyToIdStr = String(replyToId)
+              if (!replyChain.has(replyToIdStr)) {
+                replyChain.set(replyToIdStr, new Set())
+              }
+              replyChain.get(replyToIdStr)!.add(myTweetId)
+            }
+          }
+        }
+      }
+    }
+
+    // 第二遍：递归查找所有回复到目标推文或其回复链的推文
+    const findRepliesRecursive = (targetId: string, visited: Set<string>): string[] => {
+      if (visited.has(targetId)) return []
+      visited.add(targetId)
+
+      const directReplies = Array.from(replyChain.get(targetId) || [])
+      const allReplies: string[] = [...directReplies]
+
+      for (const replyId of directReplies) {
+        allReplies.push(...findRepliesRecursive(replyId, visited))
+      }
+
+      return allReplies
+    }
+
+    const allReplyIds = findRepliesRecursive(tweetId, new Set())
+
+    // 第三遍：提取 KOL 的回复
+    for (const replyId of allReplyIds) {
+      const tweetData = allTweets.get(replyId)
+      if (!tweetData) continue
+
+      const { legacy, user } = tweetData
+      const username = user?.legacy?.screen_name?.toLowerCase()
+
+      if (username && kolUsernames.has(username)) {
+        const kol = kols.find((k) => k.twitter_username?.toLowerCase() === username)
+        if (kol) {
+          interactions.push({
+            kol_id: kol.id,
+            twitter_username: kol.twitter_username,
+            display_name: kol.display_name,
+            avatar_url: kol.avatar_url,
+            my_tweet_id: replyId,
+            official_tweet_id: tweetId,
+            type: "reply",
+            created_at: legacy?.created_at || new Date().toISOString(),
+          })
+        }
+      }
+    }
+
+    console.log(`[v0] Found ${interactions.length} replies to tweet ${tweetId}`)
+    return interactions
+  } catch (error) {
+    console.error(`[v0] Error fetching replies for tweet ${tweetId}:`, error)
+    return []
+  }
+}
+
 async function fetchKolDaoInteractions(
   apiKey: string,
   kol: { id: string; twitter_username: string; display_name: string; avatar_url: string | null },
@@ -238,7 +377,8 @@ async function fetchKolDaoInteractions(
 ): Promise<KolInteraction[]> {
   console.log(`[v0] Fetching DAO interactions for ${kol.twitter_username}`)
 
-  const apiUrl = `https://twitter.good6.top/api/base/apitools/userTimeline?apiKey=${encodeURIComponent(apiKey)}&screenName=${encodeURIComponent(kol.twitter_username)}&count=100`
+  // 增加获取数量到 200，以捕获更多历史回复
+  const apiUrl = `https://twitter.good6.top/api/base/apitools/userTimeline?apiKey=${encodeURIComponent(apiKey)}&screenName=${encodeURIComponent(kol.twitter_username)}&count=200`
   const resp = await fetch(apiUrl, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
@@ -269,6 +409,7 @@ async function fetchKolDaoInteractions(
     const retweetedId: string | undefined = tweetData.retweeted_status_id_str
     const quotedId: string | undefined = tweetData.quoted_status_id_str
     const replyToId: string | undefined = tweetData.in_reply_to_status_id_str
+    const replyToUserId: string | undefined = tweetData.in_reply_to_user_id_str
 
     let interactionType: KolInteraction["type"] | null = null
     let officialId: string | null = null
@@ -281,8 +422,30 @@ async function fetchKolDaoInteractions(
       interactionType = "quote"
       officialId = String(quotedId)
     } else if (replyToId && officialIds.has(String(replyToId))) {
+      // 直接回复官方推文
       interactionType = "reply"
       officialId = String(replyToId)
+    } else if (replyToId) {
+      // 回复链：尝试追溯回复链，看是否最终回复到官方推文
+      // 注意：这需要额外的 API 调用，暂时先检查文本中是否包含官方账号提及
+      const lowerText = fullText.toLowerCase()
+      if (lowerText.includes("@brain_kol_dao") || lowerText.includes("brain_kol_dao")) {
+        // 可能是回复链中的一环，标记为回复（但 officialId 可能不准确）
+        // 优先尝试从文本中提取推文 ID
+        const statusMatch = fullText.match(/status\/(\d+)/i)
+        if (statusMatch) {
+          const extractedId = statusMatch[1]
+          if (officialIds.has(extractedId)) {
+            interactionType = "reply"
+            officialId = extractedId
+          }
+        } else {
+          // 如果无法确定具体推文，但包含官方账号，标记为回复（使用第一个可能的官方推文）
+          // 这种情况需要后续优化
+          interactionType = "reply"
+          officialId = Array.from(officialIds)[0] || String(replyToId)
+        }
+      }
     } else {
       // 检查是否在文本中包含官方推文 ID（通过链接）
       for (const id of officialIds) {
