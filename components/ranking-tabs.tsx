@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { formatNumber } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
 import type { KOL } from "@/lib/types"
@@ -288,7 +289,8 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     }
 
     return (
-      <Table>
+      <div className="w-full overflow-x-auto">
+        <Table className="min-w-[720px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-16">{t("rank")}</TableHead>
@@ -400,6 +402,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         ))}
       </TableBody>
     </Table>
+      </div>
     )
   }
 
@@ -430,7 +433,8 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </Button>
         </div>
 
-        <Table>
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[720px] text-sm md:text-base">
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-16">{t("rank")}</TableHead>
@@ -514,6 +518,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
     )
   }
@@ -557,7 +562,8 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </Button>
         </div>
 
-        <Table>
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[720px] text-sm md:text-base">
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-16">#</TableHead>
@@ -648,6 +654,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
     )
   }
@@ -664,7 +671,8 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
     }
 
     return (
-      <Table>
+      <div className="w-full overflow-x-auto">
+        <Table className="min-w-[780px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-16">{t("rank")}</TableHead>
@@ -781,24 +789,46 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           })}
         </TableBody>
       </Table>
+      </div>
     )
   }
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full">
       <TabsList className={`grid w-full mb-6 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
-        <TabsTrigger value="total" className="gap-2">
-          <Trophy className="h-4 w-4" />
-          {t("total_ranking")}
-        </TabsTrigger>
-        <TabsTrigger value="growth" className="gap-2">
-          <Zap className="h-4 w-4" />
-          {t("growth_ranking")}
-        </TabsTrigger>
-        <TabsTrigger value="governance" className="gap-2">
-          <ActivityIcon className="h-4 w-4" />
-          {t("governance_activity")}
-        </TabsTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <TabsTrigger value="total" className="gap-2">
+              <Trophy className="h-4 w-4" />
+              {t("total_ranking")}
+            </TabsTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            粉丝实力榜：衡量共识沉淀的深度。
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <TabsTrigger value="growth" className="gap-2">
+              <Zap className="h-4 w-4" />
+              {t("growth_ranking")}
+            </TabsTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            增长魄力榜：发现正在涌现的价值信号。
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <TabsTrigger value="governance" className="gap-2">
+              <ActivityIcon className="h-4 w-4" />
+              {t("governance_activity")}
+            </TabsTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            活跃榜：致敬持续输出的建设者。
+          </TooltipContent>
+        </Tooltip>
         {isAdmin && (
           <TabsTrigger value="contribution" className="gap-2">
             <Trophy className="h-4 w-4 text-amber-500" />

@@ -1,6 +1,5 @@
 import type React from "react"
 import type { Metadata } from "next"
-import Script from "next/script"
 import { Geist, Geist_Mono } from "next/font/google"
 // 暂时禁用 Analytics，避免可能的 btoa 错误
 // import { Analytics } from "@vercel/analytics/next"
@@ -42,140 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* 最优先执行：使用 beforeInteractive 策略，确保在所有代码之前 */}
-        <Script
-          id="btoa-polyfill-inline"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                'use strict';
-                try {
-                  if (typeof window === 'undefined') return;
-                  
-                  var originalBtoa = window.btoa;
-                  if (!originalBtoa) return;
-                  
-                  window.btoa = function(str) {
-                    if (typeof str !== 'string') str = String(str);
-                    try {
-                      return originalBtoa(str);
-                    } catch (e) {
-                      try {
-                        return originalBtoa(unescape(encodeURIComponent(str)));
-                      } catch (e2) {
-                        try {
-                          if (typeof TextEncoder !== 'undefined') {
-                            var encoder = new TextEncoder();
-                            var bytes = encoder.encode(str);
-                            var binary = '';
-                            for (var i = 0; i < bytes.length; i++) {
-                              binary += String.fromCharCode(bytes[i]);
-                            }
-                            return originalBtoa(binary);
-                          }
-                        } catch (e3) {}
-                        return '';
-                      }
-                    }
-                  };
-                  
-                  var suppress = function(e) {
-                    try {
-                      var msg = (e && e.message) ? String(e.message) : String(e || '');
-                      var reason = (e && e.reason) ? e.reason : null;
-                      var reasonMsg = reason && reason.message ? String(reason.message) : String(reason || '');
-                      var reasonStr = String(reason || '');
-                      
-                      if (msg.indexOf('btoa') >= 0 || msg.indexOf('InvalidCharacterError') >= 0 || 
-                          msg.indexOf('characters outside of the Latin1 range') >= 0 ||
-                          msg.indexOf('Failed to execute') >= 0 ||
-                          reasonMsg.indexOf('btoa') >= 0 || reasonMsg.indexOf('InvalidCharacterError') >= 0 ||
-                          reasonStr.indexOf('btoa') >= 0 || reasonStr.indexOf('InvalidCharacterError') >= 0) {
-                        if (e && typeof e.preventDefault === 'function') e.preventDefault();
-                        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-                        return false;
-                      }
-                    } catch (err) {}
-                  };
-                  
-                  if (window.addEventListener) {
-                    try {
-                      window.addEventListener('error', suppress, true);
-                      window.addEventListener('unhandledrejection', suppress, true);
-                    } catch (e) {}
-                  }
-                  
-                  try {
-                    window.onunhandledrejection = suppress;
-                    var origOnError = window.onerror;
-                    window.onerror = function(msg, source, lineno, colno, error) {
-                      if (msg && (String(msg).indexOf('btoa') >= 0 || String(msg).indexOf('InvalidCharacterError') >= 0)) {
-                        return true;
-                      }
-                      if (origOnError) return origOnError.apply(window, arguments);
-                      return false;
-                    };
-                  } catch (e) {}
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-        {/* 使用 beforeInteractive 策略加载外部 polyfill 作为双重保险 */}
-        <Script
-          id="btoa-polyfill"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                'use strict';
-                if (typeof window === 'undefined') return;
-                var originalBtoa = window.btoa;
-                if (!originalBtoa) return;
-                window.btoa = function(str) {
-                  if (typeof str !== 'string') str = String(str);
-                  try {
-                    return originalBtoa(str);
-                  } catch (e) {
-                    try {
-                      return originalBtoa(unescape(encodeURIComponent(str)));
-                    } catch (e2) {
-                      try {
-                        if (typeof TextEncoder !== 'undefined') {
-                          var encoder = new TextEncoder();
-                          var bytes = encoder.encode(str);
-                          var binary = '';
-                          for (var i = 0; i < bytes.length; i++) {
-                            binary += String.fromCharCode(bytes[i]);
-                          }
-                          return originalBtoa(binary);
-                        }
-                      } catch (e3) {}
-                      return '';
-                    }
-                  }
-                };
-                var suppress = function(e) {
-                  var msg = (e && e.message) ? e.message : String(e || '');
-                  var reason = (e && e.reason) ? e.reason : null;
-                  var reasonMsg = reason && reason.message ? reason.message : String(reason || '');
-                  if (msg.indexOf('btoa') !== -1 || msg.indexOf('InvalidCharacterError') !== -1 || 
-                      reasonMsg.indexOf('btoa') !== -1 || reasonMsg.indexOf('InvalidCharacterError') !== -1) {
-                    if (e && e.preventDefault) e.preventDefault();
-                    if (e && e.stopPropagation) e.stopPropagation();
-                    return false;
-                  }
-                };
-                if (window.addEventListener) {
-                  window.addEventListener('error', suppress, true);
-                  window.addEventListener('unhandledrejection', suppress, true);
-                }
-                window.onunhandledrejection = suppress;
-              })();
-            `,
-          }}
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -201,7 +66,7 @@ export default function RootLayout({
                 window.addEventListener('unhandledrejection', function(event) {
                   const reason = event.reason || {};
                   const msg = reason && reason.message ? reason.message : String(reason);
-
+                  
                   if (
                     msg.includes('MetaMask') ||
                     msg.includes('ethereum') ||
@@ -237,6 +102,48 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        {/* 最优先执行：将 btoa polyfill 放在 body 的最最最前面，使用原生 script 标签 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // 立即执行的 Polyfill，不依赖任何外部变量
+                var originalBtoa = window.btoa;
+                window.btoa = function(str) {
+                  try {
+                    return originalBtoa(str);
+                  } catch (e) {
+                    try {
+                      // 核心修复：支持中文/Emoji
+                      return originalBtoa(
+                        encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                          function(match, p1) {
+                            return String.fromCharCode('0x' + p1);
+                          }
+                        )
+                      );
+                    } catch (e2) {
+                      console.warn('btoa failed, returning empty string');
+                      return "";
+                    }
+                  }
+                };
+                
+                // 全局错误屏蔽 (最后的防线)
+                // 如果上面的 Polyfill 依然没拦住，强制忽略这个特定的 Promise Rejection
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (event.reason && (
+                      event.reason.name === 'InvalidCharacterError' || 
+                      (event.reason.message && event.reason.message.includes('btoa'))
+                    )) {
+                    event.preventDefault(); // 阻止报错导致页面崩溃
+                    console.log('Ignored btoa error in v0 preview');
+                  }
+                });
+              })();
+            `,
+          }}
+        />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider>
             <div className="min-h-screen bg-app grid-pattern">

@@ -1,3 +1,8 @@
+// DEPRECATED: 此文件已不再使用
+// btoa polyfill 现在内联在 app/layout.tsx 中
+// 保留此文件仅作为备份，不会被加载
+
+/*
 // btoa polyfill - 必须在所有其他脚本之前执行
 (function() {
   'use strict';
@@ -94,4 +99,4 @@
     }
   };
 })();
-
+*/

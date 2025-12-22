@@ -1,5 +1,7 @@
--- Update user role to admin for testforys@gmail.com
--- This script will set the specified email as an admin user
+-- Update user role to admin for testforadmin@titannet.io
+-- This script will:
+-- 1. Set the email as verified (no email confirmation needed)
+-- 2. Set the user as admin in profiles table
 
 DO $$
 DECLARE
@@ -8,15 +10,20 @@ BEGIN
   -- Find the user ID for the email
   SELECT id INTO user_uuid
   FROM auth.users
-  WHERE email = 'testforys@gmail.com';
+  WHERE email = 'testforadmin@titannet.io';
 
-  -- If user exists, update their profile
+  -- If user exists, update their email confirmation and profile
   IF user_uuid IS NOT NULL THEN
-    -- Insert or update the profile with admin role
+    -- Step 1: Set email as confirmed (no email verification needed)
+    UPDATE auth.users
+    SET email_confirmed_at = NOW()
+    WHERE id = user_uuid;
+
+    -- Step 2: Insert or update the profile with admin role
     INSERT INTO public.profiles (id, email, role, created_at, updated_at)
     VALUES (
       user_uuid,
-      'testforys@gmail.com',
+      'testforadmin@titannet.io',
       'admin',
       NOW(),
       NOW()
@@ -24,10 +31,11 @@ BEGIN
     ON CONFLICT (id)
     DO UPDATE SET
       role = 'admin',
+      email = 'testforadmin@titannet.io',
       updated_at = NOW();
 
-    RAISE NOTICE 'Successfully set testforys@gmail.com as admin';
+    RAISE NOTICE 'Successfully set testforadmin@titannet.io as admin and verified email';
   ELSE
-    RAISE NOTICE 'User with email testforys@gmail.com not found. Please sign up first.';
+    RAISE NOTICE 'User with email testforadmin@titannet.io not found. Please sign up first.';
   END IF;
 END $$;

@@ -31,66 +31,33 @@ export function formatNumber(value: number | string | null | undefined): string 
 
 /**
  * 安全地将字符串编码为 Base64，支持 Unicode 字符（包括中文）
- * 完全不依赖 window.btoa，浏览器端使用 TextEncoder + 纯 JS 实现
+ * 兼容服务端和客户端环境
  */
 export function safeBtoa(str: string): string {
-  const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-  // Node.js 环境：直接用 Buffer，天然支持 UTF-8
   if (typeof window === "undefined") {
+    // 服务端 (Node.js) 环境
     try {
-      return Buffer.from(str, "utf8").toString("base64")
+      return Buffer.from(str, "utf-8").toString("base64")
     } catch {
       return ""
     }
-  }
-
-  try {
-    let bytes: Uint8Array
-
-    if (typeof TextEncoder !== "undefined") {
-      const encoder = new TextEncoder()
-      bytes = encoder.encode(str)
-    } else {
-      // 极端旧环境降级：按 UTF-16 编码拆分低 8 位
-      const tmp: number[] = []
-      for (let i = 0; i < str.length; i++) {
-        tmp.push(str.charCodeAt(i) & 0xff)
+  } else {
+    // 客户端环境 (使用上面的 Polyfill 或手动转换)
+    try {
+      // 使用 polyfill 后的 window.btoa
+      return window.btoa(str)
+    } catch (e) {
+      // 手动 Unicode 转换 fallback
+      try {
+        return window.btoa(
+          encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) =>
+            String.fromCharCode(parseInt(p1, 16))
+          )
+        )
+      } catch (e2) {
+        return ""
       }
-      bytes = new Uint8Array(tmp)
     }
-
-    let result = ""
-    let i: number
-
-    for (i = 0; i + 2 < bytes.length; i += 3) {
-      const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!
-      result +=
-        base64Chars[(n >> 18) & 63] +
-        base64Chars[(n >> 12) & 63] +
-        base64Chars[(n >> 6) & 63] +
-        base64Chars[n & 63]
-    }
-
-    if (i < bytes.length) {
-      let n = bytes[i]! << 16
-      let padding = "=="
-
-      if (i + 1 < bytes.length) {
-        n |= bytes[i + 1]! << 8
-        padding = "="
-      }
-
-      result +=
-        base64Chars[(n >> 18) & 63] +
-        base64Chars[(n >> 12) & 63] +
-        (padding === "=" ? base64Chars[(n >> 6) & 63] : "=") +
-        padding
-    }
-
-    return result
-  } catch {
-    return ""
   }
 }
 

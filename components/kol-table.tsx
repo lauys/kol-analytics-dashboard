@@ -37,8 +37,8 @@ export function KOLTable({ kols, onRowClick }: KOLTableProps) {
   }
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-      <Table>
+    <div className="w-full overflow-x-auto rounded-xl border bg-card shadow-sm">
+      <Table className="min-w-[720px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-12">#</TableHead>

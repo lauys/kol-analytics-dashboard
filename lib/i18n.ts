@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useLanguage } from "./language-context"
 
 export type Language = "en" | "zh"
 
@@ -192,6 +192,7 @@ export const translations = {
     followers_over_time: "Followers Over Time",
     following_over_time: "Following Over Time",
     tweets_over_time: "Tweets Over Time",
+    web3_pulse_tagline: "Capturing every authentic pulse of value in the Web3 ecosystem",
 
     // Bio History
     bio_change_history: "Bio Change History",
@@ -387,6 +388,7 @@ export const translations = {
     followers_over_time: "粉丝数随时间变化",
     following_over_time: "关注数随时间变化",
     tweets_over_time: "推文数随时间变化",
+    web3_pulse_tagline: "正在捕捉 Web3 生态中每一次真实价值脉动",
 
     // Bio History
     bio_change_history: "简介变更历史",
@@ -401,13 +403,14 @@ export const translations = {
 }
 
 export function useTranslation() {
-  const [language, setLanguage] = useState<Language>("zh")
+  // 统一使用全局 LanguageContext 的语言状态，避免与 LanguageSwitcher 脱节
+  const { language } = useLanguage()
 
   const t = (key: keyof typeof translations.en): string => {
     return translations[language][key] || key
   }
 
-  return { t, language, setLanguage }
+  return { t, language }
 }
 
 export function getTranslation(language: Language) {
