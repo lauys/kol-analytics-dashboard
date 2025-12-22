@@ -814,12 +814,17 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full">
-      <TabsList className={`grid w-full mb-6 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
+      <TabsList
+        className={`grid w-full mb-6 rounded-2xl bg-muted/40 p-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <TabsTrigger
               value="total"
-              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
+                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-sky-500/15
+                         data-[state=active]:shadow-[0_0_18px_rgba(56,189,248,0.45)] data-[state=active]:border-primary/70
+                         data-[state=active]:scale-[1.02] border border-transparent"
             >
               <Trophy className="h-4 w-4" />
               {t("total_ranking")}
@@ -833,7 +838,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           <TooltipTrigger asChild>
             <TabsTrigger
               value="growth"
-              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
+                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400/15 data-[state=active]:to-sky-500/15
+                         data-[state=active]:shadow-[0_0_18px_rgba(52,211,153,0.45)] data-[state=active]:border-emerald-400/70
+                         data-[state=active]:scale-[1.02] border border-transparent"
             >
               <Zap className="h-4 w-4" />
               {t("growth_ranking")}
@@ -847,7 +855,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           <TooltipTrigger asChild>
             <TabsTrigger
               value="governance"
-              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+              className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
+                         data-[state=active]:text-primary data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-500/15 data-[state=active]:to-purple-500/15
+                         data-[state=active]:shadow-[0_0_18px_rgba(168,85,247,0.5)] data-[state=active]:border-fuchsia-400/70
+                         data-[state=active]:scale-[1.02] border border-transparent"
             >
               <ActivityIcon className="h-4 w-4" />
               {t("governance_activity")}
@@ -858,7 +869,13 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </TooltipContent>
         </Tooltip>
         {isAdmin && (
-          <TabsTrigger value="contribution" className="gap-2">
+          <TabsTrigger
+            value="contribution"
+            className="gap-2 text-xs md:text-sm font-medium text-muted-foreground/80 rounded-xl transition-all
+                       data-[state=active]:text-amber-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400/20 data-[state=active]:to-purple-500/20
+                       data-[state=active]:shadow-[0_0_18px_rgba(251,191,36,0.55)] data-[state=active]:border-amber-300/80
+                       data-[state=active]:scale-[1.02] border border-transparent"
+          >
             <Trophy className="h-4 w-4 text-amber-500" />
             {t("contribution")}
           </TabsTrigger>
