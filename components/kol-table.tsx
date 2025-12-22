@@ -103,7 +103,7 @@ export function KOLTable({ kols, onRowClick }: KOLTableProps) {
                 {kol.is_zombie && (
                   <Badge variant="destructive" className="gap-1">
                     <Skull className="h-3 w-3" />
-                    {language === "zh" ? "僵尸" : "Zombie"}
+                    {language === "zh" ? "沉睡用户" : "Dormant"}
                   </Badge>
                 )}
               </TableCell>

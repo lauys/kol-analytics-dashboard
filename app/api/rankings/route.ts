@@ -174,7 +174,7 @@ export async function GET(request: Request) {
 
       case "contribution":
         // Community contribution ranking - based on interaction metrics from tweet_snapshots
-        // 1) 获取近期（默认 30 天）内所有与 @Titannet_dao 相关的 tweet_snapshots
+        // 1) 获取近期（默认 30 天）内所有与 @Brain_KOL_DAO 相关的 tweet_snapshots
         {
           const days = Number(searchParams.get("days") || "30")
           const since = new Date()
@@ -184,8 +184,8 @@ export async function GET(request: Request) {
             .from("tweet_snapshots")
             .select("kol_id, likes, retweets, replies, quotes, text_content")
             .gte("recorded_at", since.toISOString())
-            // 仅统计与 @Titannet_dao 官方账号相关的互动
-            .or("text_content.ilike.%@titannet_dao%,text_content.ilike.%titannet_dao%")
+            // 仅统计与 @Brain_KOL_DAO 官方账号相关的互动
+            .or("text_content.ilike.%@brain_kol_dao%,text_content.ilike.%brain_kol_dao%")
 
           if (snapError) {
             console.error("[v0] Error fetching tweet_snapshots for contribution ranking:", snapError)
@@ -219,26 +219,26 @@ export async function GET(request: Request) {
             let isLike = false
             let isLink = false
 
-            // 检查是否包含 @Titannet_dao 标记
-            if (textContent.includes("@titannet_dao") || textContent.includes("titannet_dao")) {
+            // 检查是否包含 @Brain_KOL_DAO 标记
+            if (textContent.includes("@brain_kol_dao") || textContent.includes("brain_kol_dao")) {
               // 根据文本内容判断互动类型
-              if (textContent.startsWith("rt @titannet_dao") || 
-                  (textContent.startsWith("rt ") && textContent.includes("@titannet_dao"))) {
+              if (textContent.startsWith("rt @brain_kol_dao") || 
+                  (textContent.startsWith("rt ") && textContent.includes("@brain_kol_dao"))) {
                 isRetweet = true
-              } else if (textContent.includes("quote @titannet_dao") || 
-                        textContent.includes("引用 @titannet_dao")) {
+              } else if (textContent.includes("quote @brain_kol_dao") || 
+                        textContent.includes("引用 @brain_kol_dao")) {
                 isQuote = true
-              } else if (textContent.includes("reply @titannet_dao") || 
-                        textContent.includes("回复 @titannet_dao") ||
-                        textContent.includes("comment @titannet_dao") ||
-                        textContent.includes("评论 @titannet_dao")) {
+              } else if (textContent.includes("reply @brain_kol_dao") || 
+                        textContent.includes("回复 @brain_kol_dao") ||
+                        textContent.includes("comment @brain_kol_dao") ||
+                        textContent.includes("评论 @brain_kol_dao")) {
                 isReply = true
-              } else if (textContent.includes("like @titannet_dao") || 
-                        textContent.includes("点赞 @titannet_dao") ||
-                        textContent.includes("favorite @titannet_dao")) {
+              } else if (textContent.includes("like @brain_kol_dao") || 
+                        textContent.includes("点赞 @brain_kol_dao") ||
+                        textContent.includes("favorite @brain_kol_dao")) {
                 isLike = true
-              } else if (textContent.includes("@titannet_dao")) {
-                // 如果包含 @Titannet_dao 但不是明确的转发/引用/回复/点赞，可能是链接或提及
+              } else if (textContent.includes("@brain_kol_dao")) {
+                // 如果包含 @Brain_KOL_DAO 但不是明确的转发/引用/回复/点赞，可能是链接或提及
                 isLink = true
               }
             }

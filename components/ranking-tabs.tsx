@@ -817,7 +817,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
       <TabsList className={`grid w-full mb-6 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <TabsTrigger value="total" className="gap-2">
+            <TabsTrigger
+              value="total"
+              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+            >
               <Trophy className="h-4 w-4" />
               {t("total_ranking")}
             </TabsTrigger>
@@ -828,7 +831,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <TabsTrigger value="growth" className="gap-2">
+            <TabsTrigger
+              value="growth"
+              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+            >
               <Zap className="h-4 w-4" />
               {t("growth_ranking")}
             </TabsTrigger>
@@ -839,7 +845,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <TabsTrigger value="governance" className="gap-2">
+            <TabsTrigger
+              value="governance"
+              className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-primary/60 border border-transparent"
+            >
               <ActivityIcon className="h-4 w-4" />
               {t("governance_activity")}
             </TabsTrigger>

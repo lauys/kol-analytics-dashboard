@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin"
 
 export const maxDuration = 60
 
-const OFFICIAL_USERNAME = "Titannet_dao" // 不带 @
-const OFFICIAL_HANDLE = "@Titannet_dao"
+const OFFICIAL_USERNAME = "Brain_KOL_DAO" // 不带 @
+const OFFICIAL_HANDLE = "@Brain_KOL_DAO"
 
 interface OfficialTweet {
   id: string

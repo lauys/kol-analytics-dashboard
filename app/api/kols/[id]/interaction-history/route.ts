@@ -12,13 +12,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { searchParams } = new URL(request.url)
     const limit = Number(searchParams.get("limit") || "3")
 
-    // 仅拉取包含 @Titannet_dao 相关关键词的互动记录，视为与官方账号的互动
+    // 仅拉取包含 @Brain_KOL_DAO 相关关键词的互动记录，视为与官方账号的互动
     const { data, error } = await supabase
       .from("tweet_snapshots")
       .select("id, tweet_id, text_content, recorded_at")
       .eq("kol_id", id)
-      // 仅记录与 @Titannet_dao 官方账号相关的推文
-      .or("text_content.ilike.%@titannet_dao%,text_content.ilike.%titannet_dao%")
+      // 仅记录与 @Brain_KOL_DAO 官方账号相关的推文
+      .or("text_content.ilike.%@brain_kol_dao%,text_content.ilike.%brain_kol_dao%")
       .order("recorded_at", { ascending: false })
       .limit(limit)
 
@@ -32,12 +32,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const text = (row.text_content || "").toLowerCase()
         let action = "Interacted with official post"
 
-        if (text.includes("rt @titannet_dao") || text.includes("retweet")) {
+        if (text.includes("rt @brain_kol_dao") || text.includes("retweet")) {
           action = "Retweeted official post"
-        } else if (text.includes("@titannet_dao") && text.includes("reply")) {
+        } else if (text.includes("@brain_kol_dao") && text.includes("reply")) {
           action = "Replied to official post"
-        } else if (text.includes("@titannet_dao")) {
-          action = "Mentioned @Titannet_dao"
+        } else if (text.includes("@brain_kol_dao")) {
+          action = "Mentioned @Brain_KOL_DAO"
         }
 
         return {

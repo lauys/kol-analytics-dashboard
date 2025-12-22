@@ -249,13 +249,13 @@ export default function Page() {
           </div>
         </div>
 
-        {/* @Titannet_dao Interaction Cards - admin only */}
+        {/* @Brain_KOL_DAO Interaction Cards - admin only */}
         {isAdmin && (
           <div className="mb-8 grid gap-5 md:grid-cols-4">
             <Card className="border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-[0_20px_55px_rgba(56,189,248,0.45)]">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  对 @Titannet_dao 的转发数
+                  对 @Brain_KOL_DAO 的转发数
                 </CardTitle>
                 <Repeat2 className="h-5 w-5 text-emerald-500" />
               </CardHeader>
@@ -269,7 +269,7 @@ export default function Page() {
             <Card className="border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-pink-500/60 hover:shadow-[0_20px_55px_rgba(236,72,153,0.45)]">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  对 @Titannet_dao 的点赞数
+                  对 @Brain_KOL_DAO 的点赞数
                 </CardTitle>
                 <Heart className="h-5 w-5 text-pink-500" />
               </CardHeader>
@@ -283,7 +283,7 @@ export default function Page() {
             <Card className="border-border/70 bg-card/75 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5 hover:border-sky-500/60 hover:shadow-[0_20px_55px_rgba(56,189,248,0.45)]">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  对 @Titannet_dao 的评论数
+                  对 @Brain_KOL_DAO 的评论数
                 </CardTitle>
                 <MessageCircle className="h-5 w-5 text-sky-500" />
               </CardHeader>
@@ -297,7 +297,7 @@ export default function Page() {
             <Card className="border-purple-500/50 bg-gradient-to-br from-purple-600/25 via-amber-500/10 to-background/80 shadow-[0_26px_80px_rgba(147,51,234,0.7)] backdrop-blur">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  对 @Titannet_dao 的互动总和
+                  对 @Brain_KOL_DAO 的互动总和
                 </CardTitle>
                 <Sparkles className="h-5 w-5 text-purple-500" />
               </CardHeader>
@@ -306,7 +306,7 @@ export default function Page() {
                   {totalInteractions !== null ? totalInteractions.toLocaleString() : "--"}
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  所有 KOL 对 @Titannet_dao 官方内容的点赞、转发、评论等互动总和
+                  所有 KOL 对 @Brain_KOL_DAO 官方内容的点赞、转发、评论等互动总和
                 </p>
               </CardContent>
             </Card>
