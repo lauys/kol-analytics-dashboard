@@ -128,14 +128,14 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
               <XAxis
                 dataKey="date"
                 className="text-xs"
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                 angle={-45}
                 textAnchor="end"
                 height={80}
               />
               <YAxis
                 className="text-xs"
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                 tickFormatter={(value) => formatNumber(value)}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -164,14 +164,14 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
                 <XAxis
                   dataKey="date"
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                   tickFormatter={(value) => formatNumber(value)}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -199,14 +199,14 @@ export function MetricsChart({ data, days }: MetricsChartProps) {
                 <XAxis
                   dataKey="date"
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground) / 0.7)" }}
                   tickFormatter={(value) => formatNumber(value)}
                 />
                 <Tooltip content={<CustomTooltip />} />

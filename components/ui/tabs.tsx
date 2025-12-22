@@ -42,10 +42,10 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-all focus-visible:border-ring focus-visible:ring-ring/60 focus-visible:ring-[2px] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap text-muted-foreground/80 transition-all focus-visible:border-ring focus-visible:ring-ring/60 focus-visible:ring-[2px] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "hover:text-foreground hover:border-border/60 hover:bg-background/40",
-        "data-[state=active]:text-primary data-[state=active]:border-primary/70 data-[state=active]:bg-gradient-to-b data-[state=active]:from-background/90 data-[state=active]:to-background/60 data-[state=active]:shadow-[0_12px_40px_rgba(59,130,246,0.6)]",
-        "data-[state=active]:before:absolute data-[state=active]:before:inset-x-3 data-[state=active]:before:-bottom-2 data-[state=active]:before:h-0.5 data-[state=active]:before:rounded-full data-[state=active]:before:bg-gradient-to-r data-[state=active]:before:from-primary/0 data-[state=active]:before:via-primary data-[state=active]:before:to-primary/0",
+        // 选中态：更明显的高亮样式（适配排行榜 Tab）
+        "data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:shadow-[0_0_22px_rgba(59,130,246,0.75)] data-[state=active]:scale-[1.02]",
         className,
       )}
       {...props}

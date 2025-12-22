@@ -172,12 +172,12 @@ export function ImportKOLsDialog() {
             <span className="text-sm text-muted-foreground self-center">or paste usernames below</span>
           </div>
 
-          {/* Username input */}
+          {/* Username input - 固定高度，内部滚动，避免把底部按钮顶出视口 */}
           <Textarea
             placeholder="@username1&#10;@username2&#10;username3"
             value={usernames}
             onChange={(e) => setUsernames(e.target.value)}
-            className="min-h-[180px] font-mono text-sm"
+            className="min-h-[200px] max-h-[55vh] font-mono text-sm overflow-y-auto resize-none"
             disabled={isImporting}
           />
 
