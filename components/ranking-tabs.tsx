@@ -1049,7 +1049,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            衡量共识沉淀的深度
+            统计账号当前粉丝规模
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1072,7 +1072,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            发现正在涌现的价值信号
+            展示近期的数据变化
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1095,7 +1095,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            致敬持续输出的建设者
+            评估日常的发声频率
           </div>
         </TabsTrigger>
         {isAdmin && (
@@ -1119,7 +1119,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
               "text-xs text-center mt-0.5",
               activeTab === "contribution" ? "text-white/80" : "text-muted-foreground/50"
             )}>
-              贡献度排名
+              对DAO的互动贡献排名
             </div>
           </TabsTrigger>
         )}

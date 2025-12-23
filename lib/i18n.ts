@@ -206,8 +206,8 @@ export const translations = {
   },
   zh: {
     // Header
-    dashboard_title: "KOL 效能分析看板",
-    dashboard_subtitle: "洞察社交影响力，量化传播核心指标",
+    dashboard_title: "KOL 数据分析看板",
+    dashboard_subtitle: "统计跟踪成员粉丝规模、增长趋势与活跃情况",
     search_placeholder: "按名称或用户名搜索 KOL...",
     filter_all: "全部 KOL",
     filter_active: "仅活跃",
@@ -314,9 +314,9 @@ export const translations = {
     days_90: "90天",
 
     // Ranking Tabs
-    total_ranking: "粉丝实力榜",
-    growth_ranking: "增长魄力榜",
-    governance_activity: "活跃榜",
+    total_ranking: "粉丝规模榜",
+    growth_ranking: "增长趋势榜",
+    governance_activity: "活跃度排行",
     time_24h: "24小时",
     time_7d: "7天",
     time_30d: "30天",
