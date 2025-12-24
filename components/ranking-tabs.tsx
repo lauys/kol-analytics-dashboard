@@ -1049,7 +1049,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            统计账号当前粉丝规模
+            基于当前粉丝总数排序
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1072,7 +1072,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            展示近期的数据变化
+            提供日、周、月三维增长排行
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1095,7 +1095,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-xs text-center mt-0.5",
             activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            评估日常的发声频率
+            统计日常推文发布频率
           </div>
         </TabsTrigger>
         {isAdmin && (

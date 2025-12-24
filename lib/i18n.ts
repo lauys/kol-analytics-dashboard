@@ -206,8 +206,8 @@ export const translations = {
   },
   zh: {
     // Header
-    dashboard_title: "KOL 数据分析看板",
-    dashboard_subtitle: "统计跟踪成员粉丝规模、增长趋势与活跃情况",
+    dashboard_title: "KOL DAO 排行榜",
+    dashboard_subtitle: "统计全体成员核心数据，辅助 DAO 社区治理。",
     search_placeholder: "按名称或用户名搜索 KOL...",
     filter_all: "全部 KOL",
     filter_active: "仅活跃",
