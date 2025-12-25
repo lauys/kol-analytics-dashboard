@@ -51,28 +51,20 @@ export async function GET(request: Request) {
       try {
         console.log(`[v0] [CRON] Collecting data for ${kol.twitter_username}`)
 
-        const data = await twitterClient.getUserByUsername(kol.twitter_username)
+        const userData = await twitterClient.getUserByUsername(kol.twitter_username)
 
-        if (data.code !== 1) {
-          throw new Error(data.msg || "API error")
-        }
-
-        const innerData = JSON.parse(data.data)
-        const result = innerData.data?.user?.result
-        const userData = result?.legacy
-
-        if (!userData || !result?.rest_id) {
-          throw new Error("Invalid API response structure")
+        if (!userData) {
+          throw new Error("无法获取用户数据。可能的原因：1) 网络连接问题 2) API 服务暂时不可用 3) 用户名不存在 4) API Key 无效")
         }
 
         const kolData = {
           display_name: userData.name,
           bio: userData.description || "",
-          avatar_url: userData.profile_image_url_https?.replace("_normal", "_400x400") || "",
+          avatar_url: userData.profile_image_url?.replace("_normal", "_400x400") || "",
           followers_count: userData.followers_count || 0,
-          following_count: userData.friends_count || 0,
-          tweet_count: userData.statuses_count || 0,
-          twitter_user_id: result.rest_id,
+          following_count: userData.following_count || 0,
+          tweet_count: userData.tweet_count || 0,
+          twitter_user_id: userData.id,
           updated_at: new Date().toISOString(),
         }
 
