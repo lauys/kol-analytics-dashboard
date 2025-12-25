@@ -2,7 +2,7 @@
 // Based on utools.readme.io documentation
 
 const TWITTER_API_KEY = process.env.TWITTER_API_KEY
-const AUTH_TOKEN = "a92092aede379b215b1739d9d3df9fa2ff2549c2"
+const AUTH_TOKEN = process.env.TWITTER_AUTH_TOKEN // Optional: only needed for certain advanced features
 
 async function testEndpoint(name, url, method = "GET", headers = {}) {
   console.log(`\n[v0] Testing: ${name}`)
@@ -61,7 +61,7 @@ async function runTests() {
 
   const testUsername = "whale_alert"
   const apiKey = encodeURIComponent(TWITTER_API_KEY)
-  const authToken = encodeURIComponent(AUTH_TOKEN)
+  const authToken = AUTH_TOKEN ? encodeURIComponent(AUTH_TOKEN) : ""
 
   // Based on utools.readme.io documentation
   const tests = [
@@ -73,7 +73,9 @@ async function runTests() {
     },
     {
       name: "Doc Format 2: userByScreenNameV2 with auth_token",
-      url: `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}&auth_token=${authToken}`,
+      url: authToken 
+        ? `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}&auth_token=${authToken}`
+        : `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}`,
       method: "GET",
     },
     {
@@ -129,7 +131,9 @@ async function runTests() {
     // Try with auth_token in different positions
     {
       name: "Doc Format 12: userByScreenNameV2 with all params",
-      url: `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}&auth_token=${authToken}&resFormat=json`,
+      url: authToken
+        ? `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}&auth_token=${authToken}&resFormat=json`
+        : `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${apiKey}&screenName=${testUsername}&resFormat=json`,
       method: "POST",
     },
   ]
