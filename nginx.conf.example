@@ -1,0 +1,96 @@
+# Nginx 配置文件示例
+# 用于 KOL Analytics Dashboard 反向代理
+# 
+# 使用方法：
+# 1. 复制此文件到 /etc/nginx/sites-available/kol-dashboard
+# 2. 修改 server_name 为你的实际域名
+# 3. 创建符号链接：sudo ln -s /etc/nginx/sites-available/kol-dashboard /etc/nginx/sites-enabled/
+# 4. 测试配置：sudo nginx -t
+# 5. 重载配置：sudo systemctl reload nginx
+
+server {
+    listen 80;
+    server_name your-domain.com;  # 修改为你的实际域名
+
+    # 全局超时设置（防止 2 分钟超时问题）
+    keepalive_timeout 600s;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
+    send_timeout 600s;
+
+    # 日志配置
+    access_log /var/log/nginx/kol-dashboard-access.log;
+    error_log /var/log/nginx/kol-dashboard-error.log;
+
+    # 采集相关 API - 需要更长的超时时间（最长 10 分钟）
+    # 匹配路径：/api/admin/collect-data 和 /api/cron/*
+    location ~ ^/api/(admin/collect-data|cron/) {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        # 采集任务超时设置（10 分钟，600 秒）
+        # 因为采集任务可能需要较长时间，所以设置较长的超时时间
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        
+        # 保持连接设置（重要：防止 2 分钟超时）
+        proxy_buffering off;
+        proxy_request_buffering off;
+        keepalive_timeout 600s;
+        keepalive_requests 1000;
+    }
+
+    # 反向代理到 Next.js 应用（默认超时设置）
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        # 默认超时设置（60 秒）
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # 静态文件缓存（可选）
+    location /_next/static {
+        proxy_pass http://localhost:3000;
+        proxy_cache_valid 200 60m;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+# HTTPS 配置（使用 Let's Encrypt 后会自动添加）
+# 如果手动配置 HTTPS，可以参考以下配置：
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name your-domain.com;
+#
+#     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+#
+#     # SSL 配置（Certbot 会自动添加）
+#     # ... 其他配置与上面相同 ...
+# }
+#
+# server {
+#     listen 80;
+#     server_name your-domain.com;
+#     return 301 https://$server_name$request_uri;
+# }
+

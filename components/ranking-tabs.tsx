@@ -6,6 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   TrendingUp,
   TrendingDown,
@@ -21,6 +32,7 @@ import {
   ArrowUp,
   ArrowDown,
   ExternalLink,
+  Trash2,
 } from "lucide-react"
 import { formatNumber, cn } from "@/lib/utils"
 import {
@@ -66,7 +78,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 100
-  // 简单的前端缓存，避免切换时间维度 / 榜单类型时产生“整页刷新”的感觉
+  // 简单的前端缓存，避免切换时间维度 / 榜单类型时产生"整页刷新"的感觉
   const [cache, setCache] = useState<Record<string, RankingKOL[]>>({})
   // 跟踪已预加载的 key，避免重复请求
   const preloadedKeysRef = useRef<Set<string>>(new Set())
@@ -76,6 +88,10 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   const [growthSortOrder, setGrowthSortOrder] = useState<SortOrder>("desc")
   const [govSortField, setGovSortField] = useState<GovernanceSortField>("tweets")
   const [govSortOrder, setGovSortOrder] = useState<SortOrder>("desc")
+  // 批量删除相关状态
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
   const { t } = useTranslation()
 
@@ -85,6 +101,83 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
       setActiveTab("total")
     }
   }, [isAdmin, activeTab])
+
+  // 切换标签页或页面时清空选中状态
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [activeTab, currentPage])
+
+  // 处理单个复选框切换
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  // 处理全选/取消全选
+  const handleSelectAll = (currentPageKols: RankingKOL[]) => {
+    const allSelected = currentPageKols.every((kol) => selectedIds.has(kol.id))
+    if (allSelected) {
+      // 取消全选当前页
+      setSelectedIds((prev) => {
+        const newSet = new Set(prev)
+        currentPageKols.forEach((kol) => newSet.delete(kol.id))
+        return newSet
+      })
+    } else {
+      // 全选当前页
+      setSelectedIds((prev) => {
+        const newSet = new Set(prev)
+        currentPageKols.forEach((kol) => newSet.add(kol.id))
+        return newSet
+      })
+    }
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert(t("no_kols_selected"))
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch("/api/kols/batch-delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          alert(t("batch_delete_success").replace("{n}", String(selectedIds.size)))
+          setSelectedIds(new Set())
+          setShowDeleteDialog(false)
+          // 刷新数据
+          fetchRankings()
+          // 清除缓存，强制重新加载
+          setCache({})
+        } else {
+          alert(t("batch_delete_failed"))
+        }
+      } else {
+        alert(t("batch_delete_failed"))
+      }
+    } catch (error) {
+      console.error("[v0] Failed to batch delete KOLs:", error)
+      alert(t("batch_delete_failed"))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // 页面加载时预加载所有时间维度的数据（静默加载，不显示 loading）
   useEffect(() => {
@@ -473,10 +566,34 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
 
     return (
       <>
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border bg-card p-4">
+            <span className="text-sm font-medium">
+              {t("selected_count").replace("{n}", String(selectedIds.size))}
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("batch_delete")}
+            </Button>
+          </div>
+        )}
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[720px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
+            {isAdmin && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={paginatedData.length > 0 && paginatedData.every((kol) => selectedIds.has(kol.id))}
+                  onCheckedChange={() => handleSelectAll(paginatedData)}
+                />
+              </TableHead>
+            )}
             <TableHead className="w-16">{t("rank")}</TableHead>
             <TableHead>{t("kol")}</TableHead>
             <TableHead
@@ -526,8 +643,22 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
                 key={kol.id || `kol-${index}-${globalRank}`}
                 className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
                 style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
-                onClick={() => handleRowClick(kol)}
+                onClick={(e) => {
+                  // 如果点击的是复选框，不触发行点击
+                  if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                    return
+                  }
+                  handleRowClick(kol)
+                }}
               >
+              {isAdmin && (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(kol.id)}
+                    onCheckedChange={() => handleToggleSelect(kol.id)}
+                  />
+                </TableCell>
+              )}
               <TableCell className="font-bold">
                 {globalRank <= 3 ? (
                   <div className="flex items-center justify-center">
@@ -640,10 +771,35 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </Button>
         </div>
 
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="mx-6 mb-4 flex items-center justify-between rounded-lg border bg-card p-4">
+            <span className="text-sm font-medium">
+              {t("selected_count").replace("{n}", String(selectedIds.size))}
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("batch_delete")}
+            </Button>
+          </div>
+        )}
+
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[720px] text-sm md:text-base">
           <TableHeader>
             <TableRow className="bg-muted/50">
+              {isAdmin && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={paginatedData.length > 0 && paginatedData.every((kol) => selectedIds.has(kol.id))}
+                    onCheckedChange={() => handleSelectAll(paginatedData)}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-16">{t("rank")}</TableHead>
               <TableHead>{t("kol")}</TableHead>
               <TableHead
@@ -678,8 +834,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
                   key={kol.id || `kol-${index}-${globalRank}`}
                   className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
                   style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
-                  onClick={() => handleRowClick(kol)}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                      return
+                    }
+                    handleRowClick(kol)
+                  }}
                 >
+                  {isAdmin && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(kol.id)}
+                        onCheckedChange={() => handleToggleSelect(kol.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-bold">
                     {globalRank <= 3 ? (
                       <div className="flex items-center justify-center">
@@ -777,10 +946,35 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           </Button>
         </div>
 
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="mx-6 mb-4 flex items-center justify-between rounded-lg border bg-card p-4">
+            <span className="text-sm font-medium">
+              {t("selected_count").replace("{n}", String(selectedIds.size))}
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("batch_delete")}
+            </Button>
+          </div>
+        )}
+
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[720px] text-sm md:text-base">
           <TableHeader>
             <TableRow className="bg-muted/50">
+              {isAdmin && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={paginatedData.length > 0 && paginatedData.every((kol) => selectedIds.has(kol.id))}
+                    onCheckedChange={() => handleSelectAll(paginatedData)}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-16">#</TableHead>
               <TableHead>{t("kol")}</TableHead>
               <TableHead
@@ -827,8 +1021,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
                     inactive ? "bg-destructive/5" : ""
                   }`}
                   style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
-                  onClick={() => handleRowClick(kol)}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                      return
+                    }
+                    handleRowClick(kol)
+                  }}
                 >
+                  {isAdmin && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(kol.id)}
+                        onCheckedChange={() => handleToggleSelect(kol.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-semibold text-muted-foreground">#{globalRank}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -896,10 +1103,34 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         <div className="px-6 pt-6 pb-4 border-b border-border/50">
           <p className="text-sm text-foreground/90 font-medium">量化与官方账号的互动贡献。</p>
         </div>
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="mx-6 mb-4 flex items-center justify-between rounded-lg border bg-card p-4">
+            <span className="text-sm font-medium">
+              {t("selected_count").replace("{n}", String(selectedIds.size))}
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("batch_delete")}
+            </Button>
+          </div>
+        )}
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[780px] text-sm md:text-base">
         <TableHeader>
           <TableRow className="bg-muted/50">
+            {isAdmin && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={paginatedData.length > 0 && paginatedData.every((kol) => selectedIds.has(kol.id))}
+                  onCheckedChange={() => handleSelectAll(paginatedData)}
+                />
+              </TableHead>
+            )}
             <TableHead className="w-16">{t("rank")}</TableHead>
             <TableHead>{t("kol")}</TableHead>
             <TableHead className="text-right">{t("contribution_score")}</TableHead>
@@ -929,8 +1160,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
                 key={kol.id || `kol-${index}-${globalRank}`}
                 className="cursor-pointer hover:bg-accent/50 transition-all duration-300 ease-out hover:translate-x-1"
                 style={{ animation: `fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s backwards` }}
-                onClick={() => handleRowClick(kol)}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                    return
+                  }
+                  handleRowClick(kol)
+                }}
               >
+                {isAdmin && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedIds.has(kol.id)}
+                      onCheckedChange={() => handleToggleSelect(kol.id)}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-semibold text-muted-foreground">
                   {globalRank <= 3 ? (
                     <div className="flex items-center justify-center">
@@ -1180,6 +1424,28 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           )}
         </TabsContent>
       )}
+
+      {/* 批量删除确认对话框 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("batch_delete_confirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("batch_delete_message").replace("{n}", String(selectedIds.size))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? t("deleting") : t("confirm_delete_button")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   )
 }

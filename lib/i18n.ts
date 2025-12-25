@@ -272,6 +272,15 @@ export const translations = {
     no_tweet_data: "No tweet data available.",
     import_hint: "Tip: If all imports fail, please check network connection and Twitter API Key configuration",
     data_update_notice: "Data is automatically updated daily at 02:00 (UTC+8), and administrators can also manually sync in real-time.",
+    batch_delete: "Batch Delete",
+    select_all: "Select All",
+    deselect_all: "Deselect All",
+    selected_count: "{n} selected",
+    batch_delete_confirm: "Confirm Batch Delete",
+    batch_delete_message: "Are you sure you want to delete {n} KOL(s)? This action cannot be undone and will delete all related data (snapshots, history, etc.).",
+    batch_delete_success: "Successfully deleted {n} KOL(s)",
+    batch_delete_failed: "Failed to delete KOLs",
+    no_kols_selected: "Please select at least one KOL to delete",
   },
   zh: {
     // Header
@@ -537,6 +546,15 @@ export const translations = {
     no_tweet_data: "暂无推文数据。",
     import_hint: "提示：如果所有导入都失败，请检查网络连接和 Twitter API Key 配置",
     data_update_notice: "数据每日于 02:00 (UTC+8) 自动更新，亦支持管理员手动实时同步。",
+    batch_delete: "批量删除",
+    select_all: "全选",
+    deselect_all: "取消全选",
+    selected_count: "已选择 {n} 项",
+    batch_delete_confirm: "确认批量删除",
+    batch_delete_message: "确定要删除 {n} 个 KOL 吗？此操作不可撤销，将同时删除所有相关数据（快照、历史记录等）。",
+    batch_delete_success: "成功删除 {n} 个 KOL",
+    batch_delete_failed: "删除失败",
+    no_kols_selected: "请至少选择一个 KOL 进行删除",
   },
 }
 

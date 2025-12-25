@@ -161,7 +161,35 @@ export async function POST(request: NextRequest) {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         })
-        const data = await response.json()
+
+        // 检查响应状态码
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "Unknown error")
+          const errorMsg = `HTTP ${response.status}: ${errorText}`
+          console.error(`[v0] ✗ API HTTP error for ${username}: ${errorMsg}`)
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
+          continue
+        }
+
+        let data: any
+        try {
+          data = await response.json()
+        } catch (parseError) {
+          const errorMsg = `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : "Unknown parse error"}`
+          console.error(`[v0] ✗ JSON parse error for ${username}: ${errorMsg}`)
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
+          continue
+        }
 
         if (data.code !== 1 || !data.data) {
           const errorMsg = data.msg || "No data returned"
@@ -175,7 +203,21 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        const innerData = JSON.parse(data.data)
+        let innerData: any
+        try {
+          innerData = typeof data.data === "string" ? JSON.parse(data.data) : data.data
+        } catch (parseError) {
+          const errorMsg = `Failed to parse inner data: ${parseError instanceof Error ? parseError.message : "Unknown parse error"}`
+          console.error(`[v0] ✗ JSON parse error for ${username}: ${errorMsg}`)
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
+          continue
+        }
+        
         const userData = innerData?.data?.user?.result?.legacy
 
         if (!userData) {
@@ -302,11 +344,23 @@ export async function POST(request: NextRequest) {
             })
 
             if (profileResponse.ok) {
-              const profileData = await profileResponse.json()
+              let profileData: any
+              try {
+                profileData = await profileResponse.json()
+              } catch (parseError) {
+                console.log(`[v0] ⚠ Failed to parse profile JSON for ${username}:`, parseError)
+                throw parseError
+              }
+              
               if (profileData.code === 1 && profileData.data) {
                 let profileParsed = profileData.data
                 if (typeof profileParsed === "string") {
-                  profileParsed = JSON.parse(profileParsed)
+                  try {
+                    profileParsed = JSON.parse(profileParsed)
+                  } catch (parseError) {
+                    console.log(`[v0] ⚠ Failed to parse profile inner data for ${username}:`, parseError)
+                    throw parseError
+                  }
                 }
                 const userLegacy = profileParsed?.data?.user?.result?.legacy
                 if (userLegacy?.pinned_tweet_ids_str && Array.isArray(userLegacy.pinned_tweet_ids_str)) {
@@ -344,7 +398,20 @@ export async function POST(request: NextRequest) {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           })
-          const tweetsData = await tweetsResponse.json()
+
+          // 检查响应状态码
+          if (!tweetsResponse.ok) {
+            console.log(`[v0] ⚠ Tweets API HTTP error for ${username}: HTTP ${tweetsResponse.status}`)
+            throw new Error(`Tweets API HTTP error: ${tweetsResponse.status}`)
+          }
+
+          let tweetsData: any
+          try {
+            tweetsData = await tweetsResponse.json()
+          } catch (parseError) {
+            console.log(`[v0] ⚠ Failed to parse tweets JSON for ${username}:`, parseError)
+            throw new Error(`Failed to parse tweets JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+          }
 
           const allTweets: any[] = []
 
@@ -525,12 +592,32 @@ export async function POST(request: NextRequest) {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           })
-          const tweetsData = await tweetsResponse.json()
+
+          // 检查响应状态码
+          if (!tweetsResponse.ok) {
+            throw new Error(`Tweets API HTTP error: ${tweetsResponse.status}`)
+          }
+
+          let tweetsData: any
+          try {
+            tweetsData = await tweetsResponse.json()
+          } catch (parseError) {
+            throw new Error(`Failed to parse tweets JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+          }
 
           const allTweets: any[] = []
 
           if (tweetsData.code === 1 && tweetsData.data) {
-            const innerTweetsData = JSON.parse(tweetsData.data)
+            let innerTweetsData: any
+            try {
+              innerTweetsData = typeof tweetsData.data === "string" 
+                ? JSON.parse(tweetsData.data) 
+                : tweetsData.data
+            } catch (parseError) {
+              console.error(`[v0] ✗ Failed to parse inner tweets data for ${kol.twitter_username}:`, parseError)
+              throw new Error(`Failed to parse inner tweets data: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+            }
+            
             const timeline = innerTweetsData?.data?.user?.result?.timeline_v2?.timeline?.instructions || []
 
             // 获取置顶推文ID
@@ -1003,14 +1090,24 @@ async function fetchOfficialTweets(apiKey: string, limit: number): Promise<Offic
     throw new Error(`Failed to fetch official profile: HTTP ${profileResp.status}`)
   }
 
-  const profileData = await profileResp.json()
+  let profileData: any
+  try {
+    profileData = await profileResp.json()
+  } catch (parseError) {
+    throw new Error(`Failed to parse official profile JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+  }
+  
   if (profileData.code !== 1 || !profileData.data) {
     throw new Error(`Official profile API error: ${profileData.msg || "No data"}`)
   }
 
   let parsedProfile = profileData.data
   if (typeof parsedProfile === "string") {
-    parsedProfile = JSON.parse(parsedProfile)
+    try {
+      parsedProfile = JSON.parse(parsedProfile)
+    } catch (parseError) {
+      throw new Error(`Failed to parse official profile inner data: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+    }
   }
 
   const userResult = parsedProfile?.data?.user?.result
@@ -1030,14 +1127,24 @@ async function fetchOfficialTweets(apiKey: string, limit: number): Promise<Offic
     throw new Error(`Failed to fetch official tweets: HTTP ${tweetsResp.status}`)
   }
 
-  const tweetsData = await tweetsResp.json()
+  let tweetsData: any
+  try {
+    tweetsData = await tweetsResp.json()
+  } catch (parseError) {
+    throw new Error(`Failed to parse official tweets JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+  }
+  
   if (tweetsData.code !== 1 || !tweetsData.data) {
     throw new Error(`Official tweets API error: ${tweetsData.msg || "No data"}`)
   }
 
   let innerTweets = tweetsData.data
   if (typeof innerTweets === "string") {
-    innerTweets = JSON.parse(innerTweets)
+    try {
+      innerTweets = JSON.parse(innerTweets)
+    } catch (parseError) {
+      throw new Error(`Failed to parse official tweets inner data: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+    }
   }
 
   const timeline = innerTweets?.data?.user?.result?.timeline_v2?.timeline
