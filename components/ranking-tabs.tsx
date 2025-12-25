@@ -1024,29 +1024,29 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full gap-6">
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RankingType)} className="w-full gap-6 max-w-full overflow-x-hidden">
       <TabsList className={cn(
-        "!h-auto !flex !w-full rounded-2xl bg-card/60 border border-border/50 p-1.5 grid gap-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm",
+        "!h-auto !flex !w-full rounded-2xl bg-card/60 border border-border/50 p-1 sm:p-1.5 grid gap-1 sm:gap-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm max-w-full overflow-hidden",
         isAdmin ? "grid-cols-4" : "grid-cols-3"
       )}>
         <TabsTrigger
           value="total"
           className={cn(
-            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-2 sm:px-4 !border-0 min-w-0 overflow-hidden",
             activeTab === "total"
               ? "!bg-gradient-to-br !from-blue-500 !to-blue-600 !text-white shadow-lg"
               : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
           )}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Trophy className={cn(
-              "h-4 w-4",
+              "h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0",
               activeTab === "total" ? "text-yellow-300" : "text-muted-foreground/60"
             )} />
-            <span className="text-sm font-medium">{t("total_ranking")}</span>
+            <span className="text-xs sm:text-sm font-medium truncate">{t("total_ranking")}</span>
           </div>
           <div className={cn(
-            "text-xs text-center mt-0.5",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             基于当前粉丝总数排序
@@ -1055,21 +1055,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         <TabsTrigger
           value="growth"
           className={cn(
-            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-2 sm:px-4 !border-0 min-w-0 overflow-hidden",
             activeTab === "growth"
               ? "!bg-gradient-to-br !from-emerald-500 !to-teal-500 !text-white shadow-lg"
               : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
           )}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Zap className={cn(
-              "h-4 w-4",
+              "h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0",
               activeTab === "growth" ? "text-yellow-200" : "text-muted-foreground/60"
             )} />
-            <span className="text-sm font-medium">{t("growth_ranking")}</span>
+            <span className="text-xs sm:text-sm font-medium truncate">{t("growth_ranking")}</span>
           </div>
           <div className={cn(
-            "text-xs text-center mt-0.5",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             提供日、周、月三维增长排行
@@ -1078,21 +1078,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
         <TabsTrigger
           value="governance"
           className={cn(
-            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+            "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-2 sm:px-4 !border-0 min-w-0 overflow-hidden",
             activeTab === "governance"
               ? "!bg-gradient-to-br !from-fuchsia-500 !to-pink-500 !text-white shadow-lg"
               : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
           )}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ActivityIcon className={cn(
-              "h-4 w-4",
+              "h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0",
               activeTab === "governance" ? "text-pink-200" : "text-muted-foreground/60"
             )} />
-            <span className="text-sm font-medium">{t("governance_activity")}</span>
+            <span className="text-xs sm:text-sm font-medium truncate">{t("governance_activity")}</span>
           </div>
           <div className={cn(
-            "text-xs text-center mt-0.5",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             统计日常推文发布频率
@@ -1102,21 +1102,21 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
           <TabsTrigger
             value="contribution"
             className={cn(
-              "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-4 !border-0",
+              "relative !h-auto !flex !flex-col font-medium rounded-xl transition-all duration-200 w-full items-center justify-center py-3 px-2 sm:px-4 !border-0 min-w-0 overflow-hidden",
               activeTab === "contribution"
                 ? "!bg-gradient-to-br !from-amber-500 !to-orange-500 !text-white shadow-lg"
                 : "!bg-transparent !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
             )}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Trophy className={cn(
-                "h-4 w-4",
+                "h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0",
                 activeTab === "contribution" ? "text-yellow-200" : "text-muted-foreground/60"
               )} />
-              <span className="text-sm font-medium">{t("contribution")}</span>
+              <span className="text-xs sm:text-sm font-medium truncate">{t("contribution")}</span>
             </div>
             <div className={cn(
-              "text-xs text-center mt-0.5",
+              "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
               activeTab === "contribution" ? "text-white/80" : "text-muted-foreground/50"
             )}>
               对DAO的互动贡献排名

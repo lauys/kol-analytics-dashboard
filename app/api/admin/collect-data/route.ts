@@ -3,6 +3,67 @@ import { createAdminClient } from "@/lib/supabase/admin"
 
 export const maxDuration = 300 // 增加超时时间，因为需要采集更多数据
 
+/**
+ * 带超时和重试机制的 fetch 函数
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries = 3,
+  timeout = 30000, // 30秒超时
+): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+      return response
+    } catch (error: any) {
+      const isTimeout =
+        error.name === "AbortError" ||
+        error.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        error.cause?.code === "UND_ERR_CONNECT_TIMEOUT"
+      
+      const isConnectionError =
+        error.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        error.code === "ECONNREFUSED" ||
+        error.code === "ENOTFOUND" ||
+        error.message?.includes("fetch failed") ||
+        error.message?.includes("network") ||
+        error.cause?.code === "UND_ERR_CONNECT_TIMEOUT"
+
+      // 如果是超时或连接错误，且还有重试机会，则重试
+      if (attempt < retries && (isTimeout || isConnectionError)) {
+        const delay = attempt * 2000 // 指数退避：2s, 4s, 6s
+        const errorType = isTimeout ? "timeout" : "connection error"
+        console.log(
+          `[v0] ⚠ Fetch ${errorType} for ${url} (attempt ${attempt}/${retries}), retrying after ${delay}ms...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
+      }
+
+      // 最后一次尝试失败
+      if (attempt === retries) {
+        const errorType = isTimeout ? "timeout" : isConnectionError ? "connection error" : "error"
+        console.error(
+          `[v0] ✗ Fetch failed after ${retries} attempts (${errorType}) for ${url}:`,
+          error.message || error.toString(),
+        )
+        throw error
+      }
+    }
+  }
+
+  throw new Error("Unexpected error in fetchWithRetry")
+}
+
 const OFFICIAL_USERNAME = "Titannet_dao" // 不带 @
 const OFFICIAL_HANDLE = "@Titannet_dao"
 
@@ -78,6 +139,16 @@ export async function POST(request: NextRequest) {
       total: kols.length,
     }
 
+    const kolDetails: Array<{
+      username: string
+      display_name?: string
+      followers_count?: number
+      following_count?: number
+      tweet_count?: number
+      status: "success" | "failed"
+      error?: string
+    }> = []
+
     for (let i = 0; i < kols.length; i++) {
       const username = kols[i]
       console.log(`[v0] [${i + 1}/${kols.length}] Processing ${username}...`)
@@ -86,12 +157,21 @@ export async function POST(request: NextRequest) {
         const apiUrl = `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${encodeURIComponent(apiKey)}&screenName=${username}`
         console.log(`[v0] Fetching data for ${username}...`)
 
-        const response = await fetch(apiUrl)
+        const response = await fetchWithRetry(apiUrl, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        })
         const data = await response.json()
 
         if (data.code !== 1 || !data.data) {
-          console.log(`[v0] ✗ API error for ${username}: ${data.msg || "No data"}`)
-          results.failed.push({ username, error: data.msg || "No data returned" })
+          const errorMsg = data.msg || "No data returned"
+          console.log(`[v0] ✗ API error for ${username}: ${errorMsg}`)
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
           continue
         }
 
@@ -99,8 +179,14 @@ export async function POST(request: NextRequest) {
         const userData = innerData?.data?.user?.result?.legacy
 
         if (!userData) {
+          const errorMsg = "No user data in response"
           console.log(`[v0] ✗ No user data found for ${username}`)
-          results.failed.push({ username, error: "No user data in response" })
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
           continue
         }
 
@@ -110,8 +196,14 @@ export async function POST(request: NextRequest) {
         const twitterUserId = userResult?.rest_id
 
         if (!twitterUserId) {
+          const errorMsg = "No twitter_user_id in response"
           console.log(`[v0] ✗ No twitter_user_id found for ${username}`)
-          results.failed.push({ username, error: "No twitter_user_id in response" })
+          results.failed.push({ username, error: errorMsg })
+          kolDetails.push({
+            username,
+            status: "failed",
+            error: errorMsg,
+          })
           continue
         }
 
@@ -187,6 +279,15 @@ export async function POST(request: NextRequest) {
         })
 
         results.success.push(username)
+        
+        kolDetails.push({
+          username,
+          display_name: kolData.display_name,
+          followers_count: kolData.followers_count,
+          following_count: kolData.following_count,
+          tweet_count: kolData.tweet_count,
+          status: "success",
+        })
 
         console.log(`[v0] Collecting tweets for ${username}...`)
         try {
@@ -195,7 +296,7 @@ export async function POST(request: NextRequest) {
           // Try to get pinned tweet IDs from user profile API
           try {
             const profileUrl = `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${encodeURIComponent(apiKey)}&screenName=${encodeURIComponent(username)}`
-            const profileResponse = await fetch(profileUrl, {
+            const profileResponse = await fetchWithRetry(profileUrl, {
               method: "GET",
               headers: { "Content-Type": "application/json" },
             })
@@ -239,7 +340,10 @@ export async function POST(request: NextRequest) {
 
           // Fetch recent tweets
           const tweetsApiUrl = `https://twitter.good6.top/api/base/apitools/userTweetsV2?apiKey=${encodeURIComponent(apiKey)}&userId=${twitterUserId}&count=20`
-          const tweetsResponse = await fetch(tweetsApiUrl)
+          const tweetsResponse = await fetchWithRetry(tweetsApiUrl, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          })
           const tweetsData = await tweetsResponse.json()
 
           const allTweets: any[] = []
@@ -372,10 +476,16 @@ export async function POST(request: NextRequest) {
           await new Promise((resolve) => setTimeout(resolve, 2000))
         }
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Unknown error"
         console.error(`[v0] ✗ Error processing ${username}:`, error)
         results.failed.push({
           username,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMsg,
+        })
+        kolDetails.push({
+          username,
+          status: "failed",
+          error: errorMsg,
         })
       }
     }
@@ -387,6 +497,13 @@ export async function POST(request: NextRequest) {
     const tweetResults = {
       success: 0,
       failed: 0,
+      totalTweets: 0,
+      details: [] as Array<{
+        username: string
+        tweetCount: number
+        success: boolean
+        error?: string
+      }>,
     }
 
     const { data: allKols } = await supabase
@@ -404,7 +521,10 @@ export async function POST(request: NextRequest) {
 
           // 调用 collect-tweets 的逻辑来采集推文
           const tweetsApiUrl = `https://twitter.good6.top/api/base/apitools/userTweetsV2?apiKey=${encodeURIComponent(apiKey)}&userId=${kol.twitter_user_id}&count=20`
-          const tweetsResponse = await fetch(tweetsApiUrl)
+          const tweetsResponse = await fetchWithRetry(tweetsApiUrl, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          })
           const tweetsData = await tweetsResponse.json()
 
           const allTweets: any[] = []
@@ -493,9 +613,21 @@ export async function POST(request: NextRequest) {
               if (tweetsError) {
                 console.log(`[v0] ✗ Failed to save tweets for ${kol.twitter_username}: ${tweetsError.message}`)
                 tweetResults.failed++
+                tweetResults.details.push({
+                  username: kol.twitter_username,
+                  tweetCount: 0,
+                  success: false,
+                  error: tweetsError.message,
+                })
               } else {
                 console.log(`[v0] ✓ Saved ${tweetRecords.length} tweets for ${kol.twitter_username}`)
                 tweetResults.success++
+                tweetResults.totalTweets += tweetRecords.length
+                tweetResults.details.push({
+                  username: kol.twitter_username,
+                  tweetCount: tweetRecords.length,
+                  success: true,
+                })
               }
             }
           }
@@ -505,8 +637,15 @@ export async function POST(request: NextRequest) {
             await new Promise((resolve) => setTimeout(resolve, 1500))
           }
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : "Unknown error"
           console.error(`[v0] ✗ Error collecting tweets for ${kol.twitter_username}:`, error)
           tweetResults.failed++
+          tweetResults.details.push({
+            username: kol.twitter_username,
+            tweetCount: 0,
+            success: false,
+            error: errorMsg,
+          })
         }
       }
     }
@@ -831,10 +970,13 @@ export async function POST(request: NextRequest) {
       tweets: {
         success: tweetResults.success,
         failed: tweetResults.failed,
+        totalTweets: tweetResults.totalTweets,
+        details: tweetResults.details,
       },
       daoInteractions: {
         count: daoInteractionsCount,
       },
+      kolDetails,
     })
   } catch (error) {
     console.error("[v0] Collection error:", error)
@@ -852,7 +994,7 @@ async function fetchOfficialTweets(apiKey: string, limit: number): Promise<Offic
   console.log("[v0] Fetching official tweets for", OFFICIAL_HANDLE)
 
   const profileUrl = `https://twitter.good6.top/api/base/apitools/userByScreenNameV2?apiKey=${encodeURIComponent(apiKey)}&screenName=${encodeURIComponent(OFFICIAL_USERNAME)}`
-  const profileResp = await fetch(profileUrl, {
+  const profileResp = await fetchWithRetry(profileUrl, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   })
@@ -879,7 +1021,7 @@ async function fetchOfficialTweets(apiKey: string, limit: number): Promise<Offic
   }
 
   const tweetsUrl = `https://twitter.good6.top/api/base/apitools/userTweetsV2?apiKey=${encodeURIComponent(apiKey)}&userId=${encodeURIComponent(restId)}&count=${limit}`
-  const tweetsResp = await fetch(tweetsUrl, {
+  const tweetsResp = await fetchWithRetry(tweetsUrl, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   })
@@ -938,7 +1080,7 @@ async function fetchKolDaoInteractions(
   const apiUrl = `https://twitter.good6.top/api/base/apitools/userTimeline?apiKey=${encodeURIComponent(apiKey)}&screenName=${encodeURIComponent(kol.twitter_username)}&count=100`
   
   try {
-    const resp = await fetch(apiUrl, {
+    const resp = await fetchWithRetry(apiUrl, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     })

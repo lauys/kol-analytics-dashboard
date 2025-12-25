@@ -1,16 +1,18 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, RefreshCw, Download, X } from "lucide-react"
+import { Search, RefreshCw, Download, X, FileText, Square } from "lucide-react"
 import { ImportKOLsDialog } from "@/components/import-kols-dialog"
 import { UserNav } from "@/components/user-nav"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/i18n"
+import { CollectionReportDialog } from "@/components/collection-report-dialog"
+import { Progress } from "@/components/ui/progress"
 
 interface DashboardHeaderProps {
   onSearch: (query: string) => void
@@ -30,10 +32,58 @@ export function DashboardHeader({
   const [searchQuery, setSearchQuery] = useState("")
   const [collectingAll, setCollectingAll] = useState(false)
   const [collectionProgress, setCollectionProgress] = useState<string>("")
+  const [collectionProgressPercent, setCollectionProgressPercent] = useState(0)
   const [showResults, setShowResults] = useState(false)
   const [collectionResults, setCollectionResults] = useState<any>(null)
+  const [showReportDialog, setShowReportDialog] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [syncingDao, setSyncingDao] = useState(false)
+  const [hasLastReport, setHasLastReport] = useState(false)
+  const [lastReportTime, setLastReportTime] = useState<string | null>(null)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
+
+  // 检查是否有上次的采集报告
+  const checkLastReport = () => {
+    try {
+      const saved = localStorage.getItem("lastCollectionReport")
+      if (saved) {
+        const report = JSON.parse(saved)
+        setHasLastReport(true)
+        if (report.collectedAt) {
+          setLastReportTime(report.collectedAt)
+        }
+      } else {
+        setHasLastReport(false)
+        setLastReportTime(null)
+      }
+    } catch (error) {
+      console.error("[v0] Failed to check last collection report:", error)
+      setHasLastReport(false)
+      setLastReportTime(null)
+    }
+  }
+
+  // 从 localStorage 加载上次的采集报告
+  const loadLastCollectionReport = () => {
+    try {
+      const saved = localStorage.getItem("lastCollectionReport")
+      if (saved) {
+        const report = JSON.parse(saved)
+        setCollectionResults(report)
+        setShowReportDialog(true)
+      } else {
+        alert("暂无上次采集报告")
+      }
+    } catch (error) {
+      console.error("[v0] Failed to load last collection report:", error)
+      alert("加载上次采集报告失败")
+    }
+  }
+
+  // 组件加载时检查是否有上次报告
+  useEffect(() => {
+    checkLastReport()
+  }, [])
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -45,37 +95,126 @@ export function DashboardHeader({
   const handleCollectAllData = async () => {
     setCollectingAll(true)
     setCollectionProgress(t.collecting_kol_data || "正在采集KOL数据...")
+    setCollectionProgressPercent(0)
     setShowResults(false)
+    setShowReportDialog(false)
+
+    // 创建 AbortController 用于取消请求
+    const controller = new AbortController()
+    setAbortController(controller)
+
+    let progressInterval: NodeJS.Timeout | null = null
 
     try {
       console.log("[v0] Starting data collection from UI...")
+      
+      // 模拟进度更新（因为API是同步的，我们只能显示整体进度）
+      progressInterval = setInterval(() => {
+        // 如果已取消，停止更新进度
+        if (controller.signal.aborted) {
+          if (progressInterval) {
+            clearInterval(progressInterval)
+          }
+          return
+        }
+        setCollectionProgressPercent((prev) => {
+          if (prev >= 90) return prev
+          return prev + Math.random() * 10
+        })
+      }, 500)
+
       const response = await fetch("/api/admin/collect-data", {
         method: "POST",
+        signal: controller.signal,
       })
+
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+      
+      // 检查是否被取消
+      if (controller.signal.aborted) {
+        console.log("[v0] Collection was cancelled")
+        setCollectionProgress("")
+        setCollectionProgressPercent(0)
+        setCollectingAll(false)
+        setAbortController(null)
+        return
+      }
+      
+      setCollectionProgressPercent(100)
 
       if (response.ok) {
         const data = await response.json()
         console.log("[v0] Collection completed:", data)
 
-        setCollectionResults(data.results)
-        setShowResults(true)
-        setCollectionProgress("")
+        // 构建完整的报告数据
+        const reportData = {
+          results: data.results,
+          tweets: data.tweets,
+          daoInteractions: data.daoInteractions,
+          kolDetails: data.kolDetails,
+          collectedAt: new Date().toISOString(), // 保存采集时间
+        }
 
-        setTimeout(() => {
-          onRefresh()
-          setShowResults(false)
-        }, 5000)
-      } else {
-        console.error("[v0] Failed to collect data")
+        // 保存到 localStorage
+        try {
+          localStorage.setItem("lastCollectionReport", JSON.stringify(reportData))
+          // 更新状态
+          setHasLastReport(true)
+          setLastReportTime(reportData.collectedAt)
+        } catch (error) {
+          console.error("[v0] Failed to save collection report to localStorage:", error)
+        }
+
+        setCollectionResults(reportData)
         setCollectionProgress("")
-        alert(t.collection_failed || "数据采集失败")
+        setCollectionProgressPercent(0)
+        
+        // 显示报告弹框
+        setShowReportDialog(true)
+        setShowResults(false)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[v0] Failed to collect data:", errorData)
+        setCollectionProgress("")
+        setCollectionProgressPercent(0)
+        alert(t.collection_failed || "数据采集失败: " + (errorData.error || "未知错误"))
       }
-    } catch (error) {
-      console.error("[v0] Error collecting data:", error)
-      setCollectionProgress("")
-      alert(t.collection_error || "采集过程中出现错误")
+    } catch (error: any) {
+      // 清理进度更新
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+      
+      // 如果是用户主动取消，不显示错误
+      if (error.name === "AbortError" || controller.signal.aborted) {
+        console.log("[v0] Collection was cancelled by user")
+        setCollectionProgress("已取消")
+        setCollectionProgressPercent(0)
+        // 显示取消提示
+        setTimeout(() => {
+          setCollectionProgress("")
+        }, 2000)
+      } else {
+        console.error("[v0] Error collecting data:", error)
+        setCollectionProgress("")
+        setCollectionProgressPercent(0)
+        alert(t.collection_error || "采集过程中出现错误: " + (error instanceof Error ? error.message : "未知错误"))
+      }
     } finally {
       setCollectingAll(false)
+      setAbortController(null)
+    }
+  }
+
+  // 取消数据采集
+  const handleCancelCollection = () => {
+    if (abortController) {
+      console.log("[v0] Cancelling data collection...")
+      abortController.abort()
+      setCollectionProgress("正在取消...")
+      setCollectionProgressPercent(0)
     }
   }
 
@@ -217,17 +356,53 @@ export function DashboardHeader({
 
             {isAdmin && (
               <>
+                {collectingAll ? (
+                  <Button
+                    variant="destructive"
+                    onClick={handleCancelCollection}
+                    className="border border-red-500/60 bg-red-500/90 text-white shadow-[0_0_32px_rgba(239,68,68,0.45)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(239,68,68,0.7)]"
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    暂停采集
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    onClick={handleCollectAllData}
+                    disabled={isRefreshing}
+                    className="relative overflow-hidden border border-primary/60 bg-gradient-to-r from-primary/90 via-chart-2/90 to-chart-4/90 text-primary-foreground shadow-[0_0_32px_rgba(94,234,212,0.45)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(94,234,212,0.7)]"
+                  >
+                    <span className="pointer-events-none absolute inset-0 opacity-40 [mask-image:linear-gradient(to_right,transparent,white,transparent)]">
+                      <span className="block h-full w-full translate-x-[-100%] bg-[linear-gradient(to_right,transparent,white,transparent)] motion-safe:animate-[shimmer_2.4s_infinite]" />
+                    </span>
+                    <RefreshCw className="relative z-10 mr-2 h-4 w-4" />
+                    <span className="relative z-10">{t.collect_all_data}</span>
+                  </Button>
+                )}
+
                 <Button
-                  variant="default"
-                  onClick={handleCollectAllData}
-                  disabled={collectingAll || isRefreshing}
-                  className="relative overflow-hidden border border-primary/60 bg-gradient-to-r from-primary/90 via-chart-2/90 to-chart-4/90 text-primary-foreground shadow-[0_0_32px_rgba(94,234,212,0.45)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(94,234,212,0.7)]"
+                  variant="outline"
+                  onClick={loadLastCollectionReport}
+                  disabled={collectingAll || !hasLastReport}
+                  className="border-border/70 bg-background/60 text-xs md:text-sm backdrop-blur hover:border-primary/60 hover:text-primary"
+                  title={
+                    lastReportTime
+                      ? `上次采集时间: ${new Date(lastReportTime).toLocaleString("zh-CN")}`
+                      : "暂无上次采集报告"
+                  }
                 >
-                  <span className="pointer-events-none absolute inset-0 opacity-40 [mask-image:linear-gradient(to_right,transparent,white,transparent)]">
-                    <span className="block h-full w-full translate-x-[-100%] bg-[linear-gradient(to_right,transparent,white,transparent)] motion-safe:animate-[shimmer_2.4s_infinite]" />
-                  </span>
-                  <RefreshCw className={`relative z-10 mr-2 h-4 w-4 ${collectingAll ? "animate-spin" : ""}`} />
-                  <span className="relative z-10">{collectingAll ? t.collecting : t.collect_all_data}</span>
+                  <FileText className="mr-2 h-4 w-4" />
+                  上次采集报告
+                  {lastReportTime && (
+                    <span className="ml-1 text-[10px] opacity-70">
+                      ({new Date(lastReportTime).toLocaleDateString("zh-CN", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })})
+                    </span>
+                  )}
                 </Button>
 
                 <Button
@@ -267,10 +442,14 @@ export function DashboardHeader({
         </div>
 
         {collectionProgress && (
-          <div className="rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-xs shadow-[0_0_24px_rgba(56,189,248,0.35)]">
-            <div className="flex items-center gap-2">
+          <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 text-xs shadow-[0_0_24px_rgba(56,189,248,0.35)]">
+            <div className="flex items-center gap-2 mb-2">
               <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
               <span className="text-primary-foreground/80">{collectionProgress}</span>
+            </div>
+            <Progress value={collectionProgressPercent} className="h-2" />
+            <div className="mt-1 text-right text-[10px] text-primary-foreground/60">
+              {Math.round(collectionProgressPercent)}%
             </div>
           </div>
         )}
@@ -297,6 +476,17 @@ export function DashboardHeader({
           </div>
         )}
       </div>
+
+      {/* 采集报告弹框 */}
+      <CollectionReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        report={collectionResults}
+        onRefresh={() => {
+          setShowReportDialog(false)
+          onRefresh()
+        }}
+      />
     </div>
   )
 }
