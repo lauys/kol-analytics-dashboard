@@ -1049,7 +1049,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            基于当前粉丝总数排序
+            {t("total_ranking_subtitle")}
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1072,7 +1072,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            提供日、周、月三维增长排行
+            {t("growth_ranking_subtitle")}
           </div>
         </TabsTrigger>
         <TabsTrigger
@@ -1095,7 +1095,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
             activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
           )}>
-            统计日常推文发布频率
+            {t("governance_activity_subtitle")}
           </div>
         </TabsTrigger>
         {isAdmin && (
@@ -1119,7 +1119,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
               "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
               activeTab === "contribution" ? "text-white/80" : "text-muted-foreground/50"
             )}>
-              对DAO的互动贡献排名
+              {t("contribution_subtitle")}
             </div>
           </TabsTrigger>
         )}

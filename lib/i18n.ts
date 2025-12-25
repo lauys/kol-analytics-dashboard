@@ -119,8 +119,12 @@ export const translations = {
 
     // Ranking Tabs
     total_ranking: "Total Ranking",
+    total_ranking_subtitle: "Ranked by current total followers",
     growth_ranking: "Growth Ranking",
+    growth_ranking_subtitle: "Daily, weekly, and monthly growth rankings",
     governance_activity: "Activity Ranking",
+    governance_activity_subtitle: "Daily tweet posting frequency statistics",
+    contribution_subtitle: "DAO interaction contribution ranking",
     time_24h: "24 Hours",
     time_7d: "7 Days",
     time_30d: "30 Days",
@@ -379,8 +383,12 @@ export const translations = {
 
     // Ranking Tabs
     total_ranking: "粉丝规模榜",
+    total_ranking_subtitle: "基于当前粉丝总数排序",
     growth_ranking: "增长趋势榜",
+    growth_ranking_subtitle: "提供日、周、月三维增长排行",
     governance_activity: "活跃度排行",
+    governance_activity_subtitle: "统计日常推文发布频率",
+    contribution_subtitle: "对DAO的互动贡献排名",
     time_24h: "24小时",
     time_7d: "7天",
     time_30d: "30天",
