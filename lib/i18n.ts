@@ -271,6 +271,7 @@ export const translations = {
     click_collect_tweets: "Click 'Collect Tweets' button to fetch the latest tweets.",
     no_tweet_data: "No tweet data available.",
     import_hint: "Tip: If all imports fail, please check network connection and Twitter API Key configuration",
+    data_update_notice: "Data is automatically updated daily at 02:00 (UTC+8), and administrators can also manually sync in real-time.",
   },
   zh: {
     // Header
@@ -535,6 +536,7 @@ export const translations = {
     click_collect_tweets: " 点击 Collect Tweets 按钮获取最新推文数据。",
     no_tweet_data: "暂无推文数据。",
     import_hint: "提示：如果所有导入都失败，请检查网络连接和 Twitter API Key 配置",
+    data_update_notice: "数据每日于 02:00 (UTC+8) 自动更新，亦支持管理员手动实时同步。",
   },
 }
 

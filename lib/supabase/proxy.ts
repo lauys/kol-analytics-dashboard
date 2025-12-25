@@ -38,9 +38,20 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Try to get user, but don't fail if refresh token is invalid (user session expired)
+  let user = null
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+    user = authUser
+  } catch (error: any) {
+    // Silently handle refresh token errors - these are normal when sessions expire
+    if (error?.code !== "refresh_token_not_found" && error?.status !== 400) {
+      // Only log unexpected errors
+      console.error("[v0] Unexpected auth error in proxy:", error)
+    }
+  }
 
   // Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin") && !user) {

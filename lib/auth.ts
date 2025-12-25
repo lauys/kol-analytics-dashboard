@@ -7,17 +7,34 @@ export interface UserProfile {
 }
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
-  const supabase = await createServerClient()
+  try {
+    const supabase = await createServerClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (!user) return null
+    // Silently handle refresh token errors - these are normal when sessions expire
+    if (authError) {
+      if (authError.code !== "refresh_token_not_found" && authError.status !== 400) {
+        console.error("[v0] Auth error in getCurrentUser:", authError)
+      }
+      return null
+    }
 
-  const { data: profile } = await supabase.from("profiles").select("id, email, role").eq("id", user.id).single()
+    if (!user) return null
 
-  return profile
+    const { data: profile } = await supabase.from("profiles").select("id, email, role").eq("id", user.id).single()
+
+    return profile
+  } catch (error: any) {
+    // Silently handle refresh token errors
+    if (error?.code !== "refresh_token_not_found" && error?.status !== 400) {
+      console.error("[v0] Unexpected error in getCurrentUser:", error)
+    }
+    return null
+  }
 }
 
 export async function isAdmin(): Promise<boolean> {

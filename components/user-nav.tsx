@@ -22,20 +22,36 @@ export function UserNav() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const supabase = createClient()
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
+      try {
+        const supabase = createClient()
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser()
 
-      if (authUser) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, email, role")
-          .eq("id", authUser.id)
-          .single()
+        // Silently handle refresh token errors - these are normal when sessions expire
+        if (authError) {
+          if (authError.code !== "refresh_token_not_found" && authError.status !== 400) {
+            console.error("[v0] Auth error in UserNav:", authError)
+          }
+          return
+        }
 
-        if (profile) {
-          setUser(profile as UserProfile)
+        if (authUser) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id, email, role")
+            .eq("id", authUser.id)
+            .single()
+
+          if (profile) {
+            setUser(profile as UserProfile)
+          }
+        }
+      } catch (error: any) {
+        // Silently handle refresh token errors
+        if (error?.code !== "refresh_token_not_found" && error?.status !== 400) {
+          console.error("[v0] Unexpected error in UserNav:", error)
         }
       }
     }

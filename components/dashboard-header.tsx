@@ -313,9 +313,14 @@ export function DashboardHeader({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <UserNav />
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-xs text-muted-foreground whitespace-nowrap">
+              {t.data_update_notice}
+            </p>
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <UserNav />
+            </div>
           </div>
         </div>
 
