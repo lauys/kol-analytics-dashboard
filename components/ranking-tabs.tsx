@@ -1290,7 +1290,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             <span className="text-xs sm:text-sm font-medium truncate">{t("total_ranking")}</span>
           </div>
           <div className={cn(
-            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2 break-words overflow-hidden w-full px-0.5",
             activeTab === "total" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             {t("total_ranking_subtitle")}
@@ -1313,7 +1313,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             <span className="text-xs sm:text-sm font-medium truncate">{t("growth_ranking")}</span>
           </div>
           <div className={cn(
-            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2 break-words overflow-hidden w-full px-0.5",
             activeTab === "growth" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             {t("growth_ranking_subtitle")}
@@ -1336,7 +1336,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
             <span className="text-xs sm:text-sm font-medium truncate">{t("governance_activity")}</span>
           </div>
           <div className={cn(
-            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
+            "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2 break-words overflow-hidden w-full px-0.5",
             activeTab === "governance" ? "text-white/80" : "text-muted-foreground/50"
           )}>
             {t("governance_activity_subtitle")}
@@ -1360,7 +1360,7 @@ export function RankingTabs({ searchQuery = "", filter = "all", isAdmin = false 
               <span className="text-xs sm:text-sm font-medium truncate">{t("contribution")}</span>
             </div>
             <div className={cn(
-              "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2",
+              "text-[10px] sm:text-xs text-center mt-0.5 line-clamp-2 break-words overflow-hidden w-full px-0.5",
               activeTab === "contribution" ? "text-white/80" : "text-muted-foreground/50"
             )}>
               {t("contribution_subtitle")}

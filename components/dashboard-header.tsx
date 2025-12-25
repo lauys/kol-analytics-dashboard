@@ -313,11 +313,11 @@ export function DashboardHeader({
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <p className="text-xs text-muted-foreground whitespace-nowrap">
+          <div className="flex flex-col items-start gap-2 md:items-end">
+            <p className="text-[10px] md:text-xs text-muted-foreground text-left md:text-right w-full md:w-auto md:whitespace-nowrap break-words md:break-normal">
               {t.data_update_notice}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
               <LanguageSwitcher />
               <UserNav />
             </div>
