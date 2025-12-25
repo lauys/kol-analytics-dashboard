@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Upload, Loader2, FileText, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Progress } from "@/components/ui/progress"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/i18n"
 
 interface ImportResult {
   success: string[]
@@ -31,6 +33,8 @@ export function ImportKOLsDialog() {
   const [result, setResult] = useState<ImportResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const { language } = useLanguage()
+  const t = translations[language]
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -217,7 +221,7 @@ export function ImportKOLsDialog() {
                     </div>
                   ))}
                   <p className="mt-2 text-muted-foreground italic">
-                    提示：如果所有导入都失败，请检查网络连接和 Twitter API Key 配置
+                    {language === "zh" ? t.import_hint : "Tip: If all imports fail, please check network connection and Twitter API Key configuration"}
                   </p>
                 </div>
               )}

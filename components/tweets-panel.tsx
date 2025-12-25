@@ -64,10 +64,7 @@ export function TweetsPanel({ kolId, kolUsername, isAdmin, onCollectTweets }: Tw
       console.log("[v0] Tweet collection result:", result)
 
       if (response.ok && result.success) {
-        const message =
-          language === "zh"
-            ? `成功采集 ${result.savedCount} 条推文！${result.hasPinnedTweet ? "（包含置顶推文）" : ""}`
-            : `Successfully collected ${result.savedCount} tweets!${result.hasPinnedTweet ? " (including pinned tweet)" : ""}`
+        const message = t.collect_tweets_success.replace("{n}", String(result.savedCount)) + (result.hasPinnedTweet ? t.collect_tweets_with_pinned : "")
 
         alert(message)
         console.log("[v0] Successfully collected tweets:", result.savedCount)
@@ -75,18 +72,12 @@ export function TweetsPanel({ kolId, kolUsername, isAdmin, onCollectTweets }: Tw
         if (onCollectTweets) onCollectTweets()
       } else {
         console.error("[v0] Failed to collect tweets:", result.error)
-        const errorMsg =
-          language === "zh"
-            ? `采集推文失败：${result.error || "未知错误"}\n${result.details || ""}`
-            : `Failed to collect tweets: ${result.error || "Unknown error"}\n${result.details || ""}`
+        const errorMsg = t.collect_tweets_failed + ": " + (result.error || t.unknown_error) + (result.details ? "\n" + result.details : "")
         alert(errorMsg)
       }
     } catch (error) {
       console.error("[v0] Failed to collect tweets:", error)
-      const errorMsg =
-        language === "zh"
-          ? `采集推文时发生错误：${error instanceof Error ? error.message : String(error)}`
-          : `Error collecting tweets: ${error instanceof Error ? error.message : String(error)}`
+      const errorMsg = t.collect_tweets_error + ": " + (error instanceof Error ? error.message : String(error))
       alert(errorMsg)
     } finally {
       setCollecting(false)
@@ -102,7 +93,7 @@ export function TweetsPanel({ kolId, kolUsername, isAdmin, onCollectTweets }: Tw
         <div className="flex items-center justify-end">
           <Button size="sm" variant="outline" onClick={handleCollectTweets} disabled={collecting || loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${collecting ? "animate-spin" : ""}`} />
-            {collecting ? t.collecting : "Collect Tweets"}
+            {collecting ? t.collecting : t.collect_tweets}
           </Button>
         </div>
       )}
@@ -112,11 +103,8 @@ export function TweetsPanel({ kolId, kolUsername, isAdmin, onCollectTweets }: Tw
       ) : tweets.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            {language === "zh" ? "暂无推文数据。" : "No tweet data available."}
-            {isAdmin &&
-              (language === "zh"
-                ? " 点击 Collect Tweets 按钮获取最新推文数据。"
-                : " Click 'Collect Tweets' button to fetch the latest tweets.")}
+            {t.no_tweet_data}
+            {isAdmin && t.click_collect_tweets}
           </CardContent>
         </Card>
       ) : (

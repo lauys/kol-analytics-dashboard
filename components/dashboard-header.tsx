@@ -72,11 +72,11 @@ export function DashboardHeader({
         setCollectionResults(report)
         setShowReportDialog(true)
       } else {
-        alert("暂无上次采集报告")
+        alert(t.no_last_report)
       }
     } catch (error) {
       console.error("[v0] Failed to load last collection report:", error)
-      alert("加载上次采集报告失败")
+      alert(t.load_last_report_failed)
     }
   }
 
@@ -94,7 +94,7 @@ export function DashboardHeader({
 
   const handleCollectAllData = async () => {
     setCollectingAll(true)
-    setCollectionProgress(t.collecting_kol_data || "正在采集KOL数据...")
+    setCollectionProgress(t.collecting_kol_data)
     setCollectionProgressPercent(0)
     setShowResults(false)
     setShowReportDialog(false)
@@ -179,7 +179,7 @@ export function DashboardHeader({
         console.error("[v0] Failed to collect data:", errorData)
         setCollectionProgress("")
         setCollectionProgressPercent(0)
-        alert(t.collection_failed || "数据采集失败: " + (errorData.error || "未知错误"))
+        alert(t.collection_failed + ": " + (errorData.error || t.unknown_error))
       }
     } catch (error: any) {
       // 清理进度更新
@@ -190,7 +190,7 @@ export function DashboardHeader({
       // 如果是用户主动取消，不显示错误
       if (error.name === "AbortError" || controller.signal.aborted) {
         console.log("[v0] Collection was cancelled by user")
-        setCollectionProgress("已取消")
+        setCollectionProgress(t.cancelled)
         setCollectionProgressPercent(0)
         // 显示取消提示
         setTimeout(() => {
@@ -200,7 +200,7 @@ export function DashboardHeader({
         console.error("[v0] Error collecting data:", error)
         setCollectionProgress("")
         setCollectionProgressPercent(0)
-        alert(t.collection_error || "采集过程中出现错误: " + (error instanceof Error ? error.message : "未知错误"))
+        alert(t.collection_error + ": " + (error instanceof Error ? error.message : t.unknown_error))
       }
     } finally {
       setCollectingAll(false)
@@ -213,7 +213,7 @@ export function DashboardHeader({
     if (abortController) {
       console.log("[v0] Cancelling data collection...")
       abortController.abort()
-      setCollectionProgress("正在取消...")
+      setCollectionProgress(t.cancelling)
       setCollectionProgressPercent(0)
     }
   }
@@ -227,7 +227,7 @@ export function DashboardHeader({
 
       if (!response.ok) {
         console.error("[v0] Failed to export KOL history")
-        alert("导出失败，请稍后重试")
+        alert(t.export_failed_retry)
         return
       }
 
@@ -242,7 +242,7 @@ export function DashboardHeader({
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error("[v0] Error exporting KOL history:", error)
-      alert("导出过程中出现错误")
+      alert(t.export_error_occurred)
     } finally {
       setExporting(false)
     }
@@ -259,7 +259,7 @@ export function DashboardHeader({
 
       if (!response.ok || !data.success) {
         console.error("[v0] Failed to sync DAO interactions:", data)
-        alert(data.error || "同步 DAO 互动数据失败，请稍后重试")
+        alert(data.error || t.sync_dao_failed)
         return
       }
 
@@ -267,11 +267,11 @@ export function DashboardHeader({
       const kolCount = Array.isArray(data.kols) ? data.kols.length : 0
 
       alert(
-        `已完成 DAO 互动数据同步：\n- 参与 KOL 数量：${kolCount}\n- 总互动条数（最近 100 条官方推文）：${totalInteractions}`,
+        t.sync_dao_complete_message.replace("{kolCount}", String(kolCount)).replace("{totalInteractions}", String(totalInteractions)),
       )
     } catch (error) {
       console.error("[v0] Error syncing DAO interactions:", error)
-      alert("同步 DAO 互动数据过程中出现错误")
+      alert(t.sync_dao_error)
     } finally {
       setSyncingDao(false)
     }
@@ -363,7 +363,7 @@ export function DashboardHeader({
                     className="border border-red-500/60 bg-red-500/90 text-white shadow-[0_0_32px_rgba(239,68,68,0.45)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(239,68,68,0.7)]"
                   >
                     <Square className="mr-2 h-4 w-4" />
-                    暂停采集
+                    {t.pause_collection}
                   </Button>
                 ) : (
                   <Button
@@ -387,15 +387,15 @@ export function DashboardHeader({
                   className="border-border/70 bg-background/60 text-xs md:text-sm backdrop-blur hover:border-primary/60 hover:text-primary"
                   title={
                     lastReportTime
-                      ? `上次采集时间: ${new Date(lastReportTime).toLocaleString("zh-CN")}`
-                      : "暂无上次采集报告"
+                      ? `${t.last_collection_time}: ${new Date(lastReportTime).toLocaleString(language === "zh" ? "zh-CN" : "en-US")}`
+                      : t.no_last_report
                   }
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  上次采集报告
+                  {t.last_collection_report}
                   {lastReportTime && (
                     <span className="ml-1 text-[10px] opacity-70">
-                      ({new Date(lastReportTime).toLocaleDateString("zh-CN", {
+                      ({new Date(lastReportTime).toLocaleDateString(language === "zh" ? "zh-CN" : "en-US", {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -412,7 +412,7 @@ export function DashboardHeader({
                   className="border-border/70 bg-background/60 text-xs md:text-sm backdrop-blur hover:border-primary/60 hover:text-primary"
                 >
                   <RefreshCw className={`mr-2 h-4 w-4 ${syncingDao ? "animate-spin" : ""}`} />
-                  {syncingDao ? "同步 DAO 互动中..." : "同步 DAO 互动数据"}
+                  {syncingDao ? t.sync_dao_syncing : t.sync_dao_interactions}
                 </Button>
 
                 <Button
@@ -422,7 +422,7 @@ export function DashboardHeader({
                   className="border-border/70 bg-background/60 text-xs md:text-sm backdrop-blur hover:border-primary/60 hover:text-primary"
                 >
                   <Download className={`mr-2 h-4 w-4 ${exporting ? "animate-pulse" : ""}`} />
-                  {exporting ? "导出中..." : "导出历史数据"}
+                  {exporting ? t.export_exporting_short : t.export_history_data}
                 </Button>
 
                 <ImportKOLsDialog />
@@ -457,20 +457,19 @@ export function DashboardHeader({
         {showResults && collectionResults && (
           <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 px-3 py-3 text-xs shadow-[0_0_26px_rgba(16,185,129,0.4)]">
             <h3 className="mb-1.5 font-semibold text-emerald-300">
-              {t.collection_complete || "✓ 数据采集完成"}
+              {t.collection_complete}
             </h3>
             <div className="space-y-1 text-emerald-100/90">
               <p>
-                {t.successful_kols || "成功采集"}: {collectionResults.success?.length || 0}{" "}
-                {t.kols || "个KOL"}
+                {t.successful_kols}: {collectionResults.success?.length || 0} {t.kols}
               </p>
               {collectionResults.failed?.length > 0 && (
                 <p className="text-amber-200">
-                  {t.failed_kols || "失败"}: {collectionResults.failed.length} {t.kols || "个KOL"}
+                  {t.failed_kols}: {collectionResults.failed.length} {t.kols}
                 </p>
               )}
               <p className="mt-1 text-[11px] opacity-75">
-                {t.collection_note || "注意：推文数据已同步采集并保存到数据库"}
+                {t.collection_note}
               </p>
             </div>
           </div>

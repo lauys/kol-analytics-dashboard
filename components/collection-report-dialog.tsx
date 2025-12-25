@@ -75,32 +75,32 @@ export function CollectionReportDialog({
     const csvRows: string[] = []
     
     // 表头
-    csvRows.push("用户名,显示名称,状态,粉丝数,关注数,推文数,错误信息")
+    csvRows.push(`${t.csv_username},${t.csv_display_name},${t.csv_status},${t.csv_followers},${t.csv_following},${t.csv_tweets},${t.csv_error}`)
     
     // 成功的数据
     if (kolDetails) {
       kolDetails.forEach((kol) => {
         csvRows.push(
-          `"${kol.username}","${kol.display_name || ""}",${kol.status === "success" ? "成功" : "失败"},${kol.followers_count || 0},${kol.following_count || 0},${kol.tweet_count || 0},"${kol.error || ""}"`
+          `"${kol.username}","${kol.display_name || ""}",${kol.status === "success" ? t.success : t.failed},${kol.followers_count || 0},${kol.following_count || 0},${kol.tweet_count || 0},"${kol.error || ""}"`
         )
       })
     } else {
       results.success.forEach((username) => {
-        csvRows.push(`"${username}","",成功,0,0,0,""`)
+        csvRows.push(`"${username}","",${t.success},0,0,0,""`)
       })
       results.failed.forEach((item) => {
-        csvRows.push(`"${item.username}","",失败,0,0,0,"${item.error}"`)
+        csvRows.push(`"${item.username}","",${t.failed},0,0,0,"${item.error}"`)
       })
     }
     
     // 推文统计
     if (tweets?.details) {
       csvRows.push("")
-      csvRows.push("推文采集统计")
-      csvRows.push("用户名,推文数量,状态,错误信息")
+      csvRows.push(t.tweet_collection_stats)
+      csvRows.push(`${t.csv_username},${t.csv_tweet_count},${t.csv_status},${t.csv_error}`)
       tweets.details.forEach((detail) => {
         csvRows.push(
-          `"${detail.username}",${detail.tweetCount},${detail.success ? "成功" : "失败"},"${detail.error || ""}"`
+          `"${detail.username}",${detail.tweetCount},${detail.success ? t.success : t.failed},"${detail.error || ""}"`
         )
       })
     }
@@ -123,10 +123,10 @@ export function CollectionReportDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5 text-primary" />
-            数据采集报告
+            {t.collection_report_title}
           </DialogTitle>
           <DialogDescription>
-            采集完成时间: {report.collectedAt ? new Date(report.collectedAt).toLocaleString("zh-CN") : new Date().toLocaleString("zh-CN")}
+            {t.collection_complete_time}: {report.collectedAt ? new Date(report.collectedAt).toLocaleString(language === "zh" ? "zh-CN" : "en-US") : new Date().toLocaleString(language === "zh" ? "zh-CN" : "en-US")}
           </DialogDescription>
         </DialogHeader>
 
@@ -134,25 +134,25 @@ export function CollectionReportDialog({
           {/* 统计摘要 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="rounded-lg border bg-card p-4">
-              <div className="text-sm text-muted-foreground">总数量</div>
+              <div className="text-sm text-muted-foreground">{t.total_count}</div>
               <div className="text-2xl font-bold mt-1">{totalCount}</div>
             </div>
             <div className="rounded-lg border bg-card p-4 border-emerald-500/50 bg-emerald-500/5">
               <div className="text-sm text-muted-foreground flex items-center gap-1">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                成功
+                {t.success}
               </div>
               <div className="text-2xl font-bold mt-1 text-emerald-500">{successCount}</div>
             </div>
             <div className="rounded-lg border bg-card p-4 border-red-500/50 bg-red-500/5">
               <div className="text-sm text-muted-foreground flex items-center gap-1">
                 <XCircle className="h-4 w-4 text-red-500" />
-                失败
+                {t.failed}
               </div>
               <div className="text-2xl font-bold mt-1 text-red-500">{failedCount}</div>
             </div>
             <div className="rounded-lg border bg-card p-4">
-              <div className="text-sm text-muted-foreground">成功率</div>
+              <div className="text-sm text-muted-foreground">{t.success_rate}</div>
               <div className="text-2xl font-bold mt-1">{successRate}%</div>
             </div>
           </div>
@@ -160,9 +160,9 @@ export function CollectionReportDialog({
           {/* 详细数据标签页 */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
             <TabsList className="grid w-full grid-cols-3 shrink-0">
-              <TabsTrigger value="summary">采集摘要</TabsTrigger>
-              <TabsTrigger value="details">详细数据</TabsTrigger>
-              <TabsTrigger value="tweets">推文统计</TabsTrigger>
+              <TabsTrigger value="summary">{t.collection_summary}</TabsTrigger>
+              <TabsTrigger value="details">{t.detailed_data}</TabsTrigger>
+              <TabsTrigger value="tweets">{t.tweet_statistics}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="flex-1 overflow-hidden mt-4 min-h-0 flex flex-col">
@@ -172,7 +172,7 @@ export function CollectionReportDialog({
                   <div className="space-y-2">
                     <h3 className="font-semibold flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      KOL数据采集 ({successCount} 成功)
+                      {t.kol_data_collection} ({successCount} {t.successful_items})
                     </h3>
                     {kolDetails && kolDetails.length > 0 ? (
                       <div className="space-y-1">
@@ -203,7 +203,7 @@ export function CollectionReportDialog({
                           ))}
                         {kolDetails.filter((kol) => kol.status === "success").length > 10 && (
                           <div className="text-xs text-muted-foreground text-center py-2">
-                            还有 {kolDetails.filter((kol) => kol.status === "success").length - 10} 个成功项...
+                            {language === "zh" ? "还有 " : "More "}{kolDetails.filter((kol) => kol.status === "success").length - 10} {t.more_successful_items}...
                           </div>
                         )}
                       </div>
@@ -220,7 +220,7 @@ export function CollectionReportDialog({
                         ))}
                         {results.success.length > 10 && (
                           <div className="text-xs text-muted-foreground text-center py-2">
-                            还有 {results.success.length - 10} 个成功项...
+                            {language === "zh" ? "还有 " : "More "}{results.success.length - 10} {t.more_successful_items}...
                           </div>
                         )}
                       </div>
@@ -230,7 +230,7 @@ export function CollectionReportDialog({
                       <>
                         <h3 className="font-semibold flex items-center gap-2 mt-4">
                           <XCircle className="h-4 w-4 text-red-500" />
-                          失败项 ({failedCount})
+                          {t.failed_items} ({failedCount})
                         </h3>
                         <div className="space-y-1">
                           {results.failed.slice(0, 10).map((item, idx) => (
@@ -247,7 +247,7 @@ export function CollectionReportDialog({
                           ))}
                           {results.failed.length > 10 && (
                             <div className="text-xs text-muted-foreground text-center py-2">
-                              还有 {results.failed.length - 10} 个失败项...
+                              {language === "zh" ? "还有 " : "More "}{results.failed.length - 10} {t.more_failed_items}...
                             </div>
                           )}
                         </div>
@@ -260,19 +260,19 @@ export function CollectionReportDialog({
                     <div className="space-y-2 mt-4">
                       <h3 className="font-semibold flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-blue-500" />
-                        推文数据采集
+                        {t.tweet_data_collection}
                       </h3>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="rounded-lg border bg-card p-3">
-                          <div className="text-xs text-muted-foreground">成功</div>
+                          <div className="text-xs text-muted-foreground">{t.success}</div>
                           <div className="text-xl font-bold text-emerald-500">{tweets.success}</div>
                         </div>
                         <div className="rounded-lg border bg-card p-3">
-                          <div className="text-xs text-muted-foreground">失败</div>
+                          <div className="text-xs text-muted-foreground">{t.failed}</div>
                           <div className="text-xl font-bold text-red-500">{tweets.failed}</div>
                         </div>
                         <div className="rounded-lg border bg-card p-3">
-                          <div className="text-xs text-muted-foreground">总推文数</div>
+                          <div className="text-xs text-muted-foreground">{t.total_tweets_count}</div>
                           <div className="text-xl font-bold">{tweets.totalTweets || 0}</div>
                         </div>
                       </div>
@@ -284,10 +284,10 @@ export function CollectionReportDialog({
                     <div className="space-y-2 mt-4">
                       <h3 className="font-semibold flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-purple-500" />
-                        DAO互动数据
+                        {t.dao_interaction_data}
                       </h3>
                       <div className="rounded-lg border bg-card p-3">
-                        <div className="text-sm text-muted-foreground">采集到的互动数量</div>
+                        <div className="text-sm text-muted-foreground">{t.interactions_collected}</div>
                         <div className="text-2xl font-bold text-purple-500">{daoInteractions.count}</div>
                       </div>
                     </div>
@@ -323,7 +323,7 @@ export function CollectionReportDialog({
                               )}
                             </div>
                             <Badge variant={kol.status === "success" ? "default" : "destructive"}>
-                              {kol.status === "success" ? "成功" : "失败"}
+                              {kol.status === "success" ? t.success : t.failed}
                             </Badge>
                           </div>
                         </div>
@@ -350,8 +350,8 @@ export function CollectionReportDialog({
                           </div>
                         ) : (
                           <div className="mt-2 text-sm text-red-500">
-                            <div className="font-semibold">错误信息:</div>
-                            <div className="mt-1">{kol.error || "未知错误"}</div>
+                            <div className="font-semibold">{t.error_message}:</div>
+                            <div className="mt-1">{kol.error || t.unknown_error}</div>
                           </div>
                         )}
                       </div>
@@ -366,7 +366,7 @@ export function CollectionReportDialog({
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                             <span className="font-medium">@{username}</span>
-                            <Badge variant="default">成功</Badge>
+                            <Badge variant="default">{t.success}</Badge>
                           </div>
                         </div>
                       ))}
@@ -378,7 +378,7 @@ export function CollectionReportDialog({
                           <div className="flex items-center gap-2 mb-1">
                             <XCircle className="h-4 w-4 text-red-500" />
                             <span className="font-medium">@{item.username}</span>
-                            <Badge variant="destructive">失败</Badge>
+                            <Badge variant="destructive">{t.failed}</Badge>
                           </div>
                           <div className="text-sm text-red-500 mt-1">{item.error}</div>
                         </div>
@@ -411,7 +411,7 @@ export function CollectionReportDialog({
                             )}
                             <span className="font-medium">@{detail.username}</span>
                             <Badge variant={detail.success ? "default" : "destructive"}>
-                              {detail.success ? "成功" : "失败"}
+                              {detail.success ? t.success : t.failed}
                             </Badge>
                           </div>
                           <div className="text-sm">
@@ -429,14 +429,14 @@ export function CollectionReportDialog({
                   <div className="text-center py-8 text-muted-foreground">
                     {tweets ? (
                       <div>
-                        <p>成功采集: {tweets.success} 个KOL的推文</p>
-                        <p>失败: {tweets.failed} 个KOL的推文</p>
+                        <p>{t.successfully_collected_tweets}: {tweets.success} {t.kol_tweets}</p>
+                        <p>{t.failed_tweets}: {tweets.failed} {t.kol_tweets}</p>
                         {tweets.totalTweets !== undefined && (
-                          <p>总推文数: {tweets.totalTweets}</p>
+                          <p>{t.total_tweets_count}: {tweets.totalTweets}</p>
                         )}
                       </div>
                     ) : (
-                      <p>暂无推文采集数据</p>
+                      <p>{t.no_tweet_collection_data}</p>
                     )}
                   </div>
                 )}
@@ -448,15 +448,15 @@ export function CollectionReportDialog({
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            导出报告
+            {t.export_report}
           </Button>
           {onRefresh && (
             <Button variant="outline" onClick={onRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              刷新数据
+              {t.refresh_data}
             </Button>
           )}
-          <Button onClick={() => onOpenChange(false)}>关闭</Button>
+          <Button onClick={() => onOpenChange(false)}>{t.close}</Button>
         </div>
       </DialogContent>
     </Dialog>
