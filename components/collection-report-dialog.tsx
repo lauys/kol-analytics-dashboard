@@ -193,10 +193,10 @@ export function CollectionReportDialog({
                               </div>
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 {kol.followers_count !== undefined && (
-                                  <span>粉丝: {kol.followers_count.toLocaleString()}</span>
+                                  <span>{t.followers}: {kol.followers_count.toLocaleString()}</span>
                                 )}
                                 {kol.tweet_count !== undefined && (
-                                  <span>推文: {kol.tweet_count.toLocaleString()}</span>
+                                  <span>{t.tweets}: {kol.tweet_count.toLocaleString()}</span>
                                 )}
                               </div>
                             </div>
@@ -330,19 +330,19 @@ export function CollectionReportDialog({
                         {kol.status === "success" ? (
                           <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
                             <div>
-                              <div className="text-muted-foreground">粉丝数</div>
+                              <div className="text-muted-foreground">{t.followers}</div>
                               <div className="font-semibold">
                                 {kol.followers_count?.toLocaleString() || "N/A"}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">关注数</div>
+                              <div className="text-muted-foreground">{t.following}</div>
                               <div className="font-semibold">
                                 {kol.following_count?.toLocaleString() || "N/A"}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">推文数</div>
+                              <div className="text-muted-foreground">{t.tweets}</div>
                               <div className="font-semibold">
                                 {kol.tweet_count?.toLocaleString() || "N/A"}
                               </div>
@@ -415,7 +415,7 @@ export function CollectionReportDialog({
                             </Badge>
                           </div>
                           <div className="text-sm">
-                            <span className="text-muted-foreground">推文数: </span>
+                            <span className="text-muted-foreground">{t.tweets}: </span>
                             <span className="font-semibold">{detail.tweetCount}</span>
                           </div>
                         </div>

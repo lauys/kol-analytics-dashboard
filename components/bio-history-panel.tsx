@@ -67,19 +67,13 @@ export function BioHistoryPanel({ kolId }: BioHistoryPanelProps) {
     const diffDays = Math.floor(diffMs / 86400000)
 
     if (diffMins < 1) {
-      return language === "zh" ? "刚刚" : "Just now"
+      return t.just_now
     } else if (diffMins < 60) {
-      return language === "zh" 
-        ? `${diffMins}分钟前` 
-        : `${diffMins}m ago`
+      return t.time_minutes_ago.replace("{n}", String(diffMins))
     } else if (diffHours < 24) {
-      return language === "zh"
-        ? `${diffHours}小时前`
-        : `${diffHours}h ago`
+      return t.time_hours_ago.replace("{n}", String(diffHours))
     } else if (diffDays < 7) {
-      return language === "zh"
-        ? `${diffDays}天前`
-        : `${diffDays}d ago`
+      return t.time_days_ago.replace("{n}", String(diffDays))
     } else {
       return date.toLocaleDateString(language === "zh" ? "zh-CN" : "en-US", {
         year: "numeric",
